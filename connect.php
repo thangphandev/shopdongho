@@ -167,6 +167,74 @@ class connect {
         }
     }
 
+//hàm tương tác với đon hàng
+    public function getUserOrders($userId) {
+        try {
+            $query = "SELECT d.*, ct.trangthai as trangthai_thanhtoan 
+                    FROM donhang d
+                    LEFT JOIN chitietthanhtoan ct ON d.idthanhtoan = ct.idthanhtoan
+                    WHERE d.idnguoidung = :userId 
+                    ORDER BY d.ngaydat DESC";
+            
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':userId', $userId);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            error_log("Error getting user orders: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function getOrderDetails($orderId) {
+        try {
+            $query = "SELECT cd.*, s.tensanpham, s.idsanpham, s.path_anh_goc,
+                        s.bosuutap, s.loaimay, s.chatlieuvo, s.loaiday, s.matkinh,
+                        s.mausac, s.kichthuoc, s.doday, s.chongnuoc,
+                        cd.giaban, cd.soluong,
+                        d.ngaydat, d.trangthai, d.tennguoidat, d.diachigiao, d.sdt,
+                        ct.phuongthuctt, ct.trangthai as trangthai_thanhtoan
+                    FROM chitietdonhang cd
+                    JOIN sanpham s ON cd.idsanpham = s.idsanpham
+                    JOIN donhang d ON cd.iddonhang = d.iddonhang
+                    LEFT JOIN chitietthanhtoan ct ON d.idthanhtoan = ct.idthanhtoan
+                    WHERE cd.iddonhang = :orderId";
+            
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':orderId', $orderId);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            error_log("Error getting order details: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function cancelOrder($orderId, $userId) {
+        try {
+            // Check if order belongs to user and is in cancellable state
+            $query = "SELECT trangthai FROM donhang 
+                    WHERE iddonhang = :orderId 
+                    AND idnguoidung = :userId 
+                    AND trangthai IN ('Chờ xác nhận', 'Đã xác nhận')";
+            
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute([':orderId' => $orderId, ':userId' => $userId]);
+            
+            if ($stmt->rowCount() > 0) {
+                $updateQuery = "UPDATE donhang SET trangthai = 'Đã hủy' 
+                            WHERE iddonhang = :orderId";
+                $stmt = $this->conn->prepare($updateQuery);
+                return $stmt->execute([':orderId' => $orderId]);
+            }
+            return false;
+        } catch(PDOException $e) {
+            error_log("Error canceling order: " . $e->getMessage());
+            return false;
+        }
+    }
+
+
     public function updateProduct($id, $name, $code, $status, $image, $url) {
         try {
             $query = "UPDATE products 
@@ -459,25 +527,163 @@ class connect {
         }
     }
 
-    public function getCartItems($idnguoidung) {
+    public function createOrder($userId, $orderData, $products, $paymentMethod) {
         try {
-            $query = "SELECT s.*, c.soluong, (s.giaban * c.soluong) as thanhtien 
-                     FROM giohang g 
-                     JOIN chitietgiohang c ON g.idgiohang = c.idgiohang 
-                     JOIN sanpham s ON c.idsanpham = s.idsanpham 
-                     WHERE g.idnguoidung = :idnguoidung";
+            $this->conn->beginTransaction();
+    
+            // 1. Create payment record first
+            $paymentSql = "INSERT INTO chitietthanhtoan (phuongthuctt, tongtien, trangthai, magiaodich, ngaynhanhang) 
+                          VALUES (:phuongthuctt, :tongtien, :trangthai, :magiaodich, :ngaynhanhang)";
+            $stmt = $this->conn->prepare($paymentSql);
+            $stmt->execute([
+                ':phuongthuctt' => $paymentMethod,
+                ':tongtien' => $orderData['total_amount'],
+                ':trangthai' => 'Chưa thanh toán',
+                ':magiaodich' => $paymentMethod === 'cod' ? NULL : '',
+                ':ngaynhanhang' => NULL
+            ]);
+            $idthanhtoan = $this->conn->lastInsertId();
+    
+            // 2. Create order
+            $orderSql = "INSERT INTO donhang (idnguoidung, tennguoidat, sdt, diachigiao, tongtien, 
+                                            phuongthuctt, trangthai, idthanhtoan) 
+                        VALUES (:userId, :fullname, :phone, :address, :total, 
+                                :payment, :trangthai, :idthanhtoan)";
+            
+            $stmt = $this->conn->prepare($orderSql);
+            $stmt->execute([
+                ':userId' => $userId,
+                ':fullname' => $orderData['fullname'],
+                ':phone' => $orderData['phone'],
+                ':address' => $orderData['full_address'],
+                ':total' => $orderData['total_amount'],
+                ':payment' => $paymentMethod,
+                ':trangthai' => 'Chờ xác nhận',
+                ':idthanhtoan' => $idthanhtoan
+            ]);
+            
+            $orderId = $this->conn->lastInsertId();
+    
+            // 3. Create order details
+            foreach ($products as $product) {
+                $detailSql = "INSERT INTO chitietdonhang (iddonhang, idsanpham, soluong, giaban) 
+                             VALUES (:orderId, :productId, :quantity, :price)";
+                
+                $stmt = $this->conn->prepare($detailSql);
+                $stmt->execute([
+                    ':orderId' => $orderId,
+                    ':productId' => $product['idsanpham'],
+                    ':quantity' => $product['quantity'],
+                    ':price' => $product['price']
+                ]);
+            }
+    
+            // 4. Remove items from cart if order is from cart
+            if ($orderData['type'] === 'cart') {
+                $cartStmt = $this->conn->prepare("SELECT idgiohang FROM giohang WHERE idnguoidung = ?");
+                $cartStmt->execute([$userId]);
+                $cartId = $cartStmt->fetchColumn();
+    
+                if ($cartId) {
+                    foreach ($products as $product) {
+                        $deleteStmt = $this->conn->prepare(
+                            "DELETE FROM chitietgiohang WHERE idgiohang = ? AND idsanpham = ?"
+                        );
+                        $deleteStmt->execute([$cartId, $product['idsanpham']]);
+                    }
+                    $this->updateCartTotal($cartId);
+                }
+            }
+    
+            $this->conn->commit();
+            return ['success' => true, 'orderId' => $orderId];
+    
+        } catch (Exception $e) {
+            $this->conn->rollBack();
+            error_log("Order creation error: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
+            return ['success' => false, 'message' => 'Không thể tạo đơn hàng: ' . $e->getMessage()];
+        }
+    }
+
+    public function removePurchasedItems($userId, $productIds) {
+        try {
+            // Get the user's cart ID
+            $stmt = $this->conn->prepare("SELECT idgiohang FROM giohang WHERE idnguoidung = ?");
+            $stmt->execute([$userId]);
+            $cartId = $stmt->fetchColumn();
+    
+            if (!$cartId) {
+                return false;
+            }
+    
+            // Create placeholders for the IN clause
+            $placeholders = str_repeat('?,', count($productIds) - 1) . '?';
+            
+            // Delete items from chitietgiohang
+            $sql = "DELETE FROM chitietgiohang 
+                    WHERE idgiohang = ? 
+                    AND idsanpham IN ($placeholders)";
+            
+            // Combine cartId with productIds for the execute parameters
+            $params = array_merge([$cartId], $productIds);
+            
+            $stmt = $this->conn->prepare($sql);
+            $success = $stmt->execute($params);
+    
+            if ($success) {
+                // Update cart total
+                $this->updateCartTotal($cartId);
+            }
+    
+            return $success;
+        } catch (PDOException $e) {
+            error_log("Error removing purchased items: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+ 
+
+    public function getCartItems($userId) {
+        try {
+            $query = "SELECT g.idgiohang, g.idnguoidung, c.idsanpham, c.soluong, 
+                        s.tensanpham, s.path_anh_goc, s.giaban, 
+                        k.gia_giam, k.ngaybatdau, k.ngayketthuc,
+                        CASE 
+                            WHEN k.gia_giam IS NOT NULL 
+                                AND k.ngaybatdau <= NOW() 
+                                AND k.ngayketthuc >= NOW() 
+                            THEN s.giaban - k.gia_giam
+                            ELSE s.giaban 
+                        END as gia_sau_giam,
+                        c.soluong * (
+                            CASE 
+                                WHEN k.gia_giam IS NOT NULL 
+                                    AND k.ngaybatdau <= NOW() 
+                                    AND k.ngayketthuc >= NOW() 
+                                THEN s.giaban - k.gia_giam
+                                ELSE s.giaban 
+                            END
+                        ) as thanhtien
+                    FROM giohang g
+                    INNER JOIN chitietgiohang c ON g.idgiohang = c.idgiohang
+                    INNER JOIN sanpham s ON c.idsanpham = s.idsanpham
+                    LEFT JOIN khuyenmai k ON s.idkhuyenmai = k.idkhuyenmai
+                    WHERE g.idnguoidung = :userId
+                    AND s.trangthai = 1";
+            
             $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(':idnguoidung', $idnguoidung);
+            $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch(PDOException $e) {
-            error_log("Get cart items error: " . $e->getMessage());
+            error_log("Error in getCartItems: " . $e->getMessage());
             return [];
         }
     }
 
     //đăng xuất đăng nhập
-
 
 
     public function login($email, $matkhau) {

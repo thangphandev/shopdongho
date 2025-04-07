@@ -11,8 +11,8 @@ $categoryProducts = [];
 foreach ($categories as $category) {
     $categoryProducts[$category['iddanhmuc']] = $connect->getProductsByCategory($category['iddanhmuc']);
 }
-include 'header.php';
 
+include 'header.php';
 ?>
 
 <!DOCTYPE html>

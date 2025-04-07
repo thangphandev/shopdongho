@@ -258,6 +258,9 @@ include 'header.php';
 <?php include 'footer.php'; ?>
 
 <style>
+    .text-decoration-line-through {
+    text-decoration: line-through;
+}
     
     .d_box_number {
         display: flex;
@@ -634,7 +637,7 @@ include 'header.php';
             success: function(response) {
                 const data = JSON.parse(response);
                 if (data.success) {
-                    // Update cart count in header
+                    // Update cart count immediately
                     $.ajax({
                         url: 'lay_so_luong_san_pham.php',
                         type: 'GET',
@@ -643,6 +646,7 @@ include 'header.php';
                             $('.cart-count').text(cartData.count);
                         }
                     });
+                    
                     Swal.fire({
                         position: "top-end",
                         icon: "success",

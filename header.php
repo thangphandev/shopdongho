@@ -137,7 +137,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <a href="giohang.php" rel="nofollow,noindex,noopener" class="d_btn clnau bdnau fs20 ml-2 cspoint d-inline-block text-center cart-icon-wrapper">
                                 <i class="fa fa-shopping-cart"></i>
                                 <?php if (isset($_SESSION['user_id'])): ?>
-                                    <span class="cart-count"><?php echo $connect->laysoluongsanpham($_SESSION['user_id']); ?></span>
+                                    <span class="cart-count">
+                                        <?php 
+                                        if (isset($_SESSION['user_id'])) {
+                                            echo $connect->laysoluongsanpham($_SESSION['user_id']);
+                                        } else {
+                                            echo '0';
+                                        }
+                                        ?>
+                                    </span>
                                 <?php endif; ?>
                             </a>
 
@@ -147,6 +155,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </button>
                                 <div class="dropdown-content">
                                     <a href="thong-tin-ca-nhan"><i class="fa fa-user-circle"></i> Thông tin cá nhân</a>
+                                    <a href="don_hang.php"><i class="fa fa-box"></i> Thông tin đơn hàng</a>
                                     <a href="logout.php">Đăng xuất <i class="fa fa-sign-out"></i></a>
                                 </div>
                             </div>
@@ -363,7 +372,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             color: #ffc107;
         }
 
-        .user-dropdown .dropdown-content a:first-child {
+        .user-dropdown .dropdown-content a:nth-child(-n+2){
             border-bottom: 1px solid #ffc107;
         }
 

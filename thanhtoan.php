@@ -24,12 +24,15 @@ if ($_GET['type'] === 'direct') {
     
     $product = $connect->getProductDetails($productId);
     if ($product) {
+        $price = !empty($product['gia_giam']) ? 
+                 ($product['giaban'] - $product['gia_giam']) : 
+                 $product['giaban'];
         $products[] = [
             'product' => $product,
             'quantity' => $quantity,
-            'subtotal' => $product['giaban'] * $quantity
+            'subtotal' => $price * $quantity
         ];
-        $total = $product['giaban'] * $quantity;
+        $total = $price * $quantity;
     }
 }
 // Handle cart checkout
@@ -39,12 +42,15 @@ elseif ($_GET['type'] === 'cart' && isset($_GET['items'])) {
         list($productId, $quantity) = explode('_', $item);
         $product = $connect->getProductDetails((int)$productId);
         if ($product) {
+            $price = !empty($product['gia_giam']) ? 
+                     ($product['giaban'] - $product['gia_giam']) : 
+                     $product['giaban'];
             $products[] = [
                 'product' => $product,
                 'quantity' => (int)$quantity,
-                'subtotal' => $product['giaban'] * (int)$quantity
+                'subtotal' => $price * (int)$quantity
             ];
-            $total += $product['giaban'] * (int)$quantity;
+            $total += $price * (int)$quantity;
         }
     }
 }
@@ -97,7 +103,7 @@ include 'header.php';
                         </div>
                         <div class="form-group mb-3">
                             <label>Phường/Xã</label>
-                            <select class="form-control" id="ward" required>
+                            <select class="form-control" id="ward" >
                                 <option value="">Chọn Phường/Xã</option>
                             </select>
                         </div>
@@ -107,7 +113,7 @@ include 'header.php';
                         </div>
                         <div class="form-group mb-4">
                             <label>Phương thức thanh toán</label>
-                            <div class="payment-buttons">
+                            <div class="payment-buttons mt-3">
                                 <div class="d-flex justify-content-between text-center box_detail_btn clwhite mb-3">
                                     <a href="javascript:void(0)" onclick="placeOrder('cod')" 
                                     class="d_detail_btn _cart_buynow d-inline-flex flex-column justify-content-center smooth bgcam">
@@ -128,18 +134,38 @@ include 'header.php';
                 <div class="order-summary">
                     <h3 class="fs22 mb-4">Đơn hàng của bạn</h3>
                     <div class="order-items">
-                        <?php foreach ($products as $item): ?>
-                            <div class="order-item mb-3">
-                                <div class="d-flex align-items-center">
-                                    <img src="<?= htmlspecialchars($item['product']['path_anh_goc']) ?>" class="img-fluid" style="width: 80px;">
-                                    <div class="ms-3">
-                                        <h4 class="fs16"><?= htmlspecialchars($item['product']['tensanpham']) ?></h4>
-                                        <p class="mb-0">Số lượng: <?= $item['quantity'] ?></p>
-                                        <p class="mb-0 clnau"><?= number_format($item['subtotal'], 0, ',', '.') ?>đ</p>
-                                    </div>
+                    <?php foreach ($products as $item): ?>
+                        <div class="order-item mb-3">
+                            <div class="d-flex align-items-center">
+                                <img src="<?= htmlspecialchars($item['product']['path_anh_goc']) ?>" class="img-fluid" style="width: 80px;">
+                                <div class="ms-3 w-100">
+                                    <h4 class="fs16"><?= htmlspecialchars($item['product']['tensanpham']) ?></h4>
+                                    <?php if (!empty($item['product']['gia_giam'])): ?>
+                                        <div class="price-calculation">
+                                            <p class="mb-0 text-decoration-line-through text-muted">
+                                                Giá gốc: <?= number_format($item['product']['giaban'], 0, ',', '.') ?>đ
+                                            </p>
+                                            <p class="mb-0 clnau">
+                                                Giá KM: <?= number_format($item['product']['giaban'] - $item['product']['gia_giam'], 0, ',', '.') ?>đ
+                                            </p>
+                                            <p class="mb-0">Số lượng: <?= $item['quantity'] ?></p>
+                                            <p class="mb-0 fw-bold clnau">
+                                                Thành tiền: <?= number_format(($item['product']['giaban'] - $item['product']['gia_giam']) * $item['quantity'], 0, ',', '.') ?>đ
+                                            </p>
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="price-calculation">
+                                            <p class="mb-0">Đơn giá: <?= number_format($item['product']['giaban'], 0, ',', '.') ?>đ</p>
+                                            <p class="mb-0">Số lượng: <?= $item['quantity'] ?></p>
+                                            <p class="mb-0 fw-bold clnau">
+                                                Thành tiền: <?= number_format($item['subtotal'], 0, ',', '.') ?>đ
+                                            </p>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
                             </div>
-                        <?php endforeach; ?>
+                        </div>
+                    <?php endforeach; ?>
                     </div>
                     <div class="order-total mt-4">
                         <div class="d-flex justify-content-between mb-2">
@@ -190,47 +216,90 @@ include 'header.php';
 
         
         document.getElementById('paypal-button').addEventListener('click', function() {
-        const paypalContainer = document.getElementById('paypal-button-container');
-        paypalContainer.style.display = paypalContainer.style.display === 'none' ? 'block' : 'none';
-    });
+            const paypalContainer = document.getElementById('paypal-button-container');
+            if (paypalContainer.style.display === 'none') {
+                paypalContainer.style.display = 'block';
+                // Initialize PayPal button only when showing the container
+                if (!paypalContainer.hasChildNodes()) {
+                    paypal.Buttons({
+                        style: {
+                            layout: 'vertical',
+                            color: 'blue',
+                            shape: 'rect',
+                            label: 'paypal'
+                        },
+                        createOrder: function(data, actions) {
+                            return actions.order.create({
+                                purchase_units: [{
+                                    amount: {
+                                        value: '<?= ($total + 30000) / 23000 ?>' // Convert VND to USD
+                                    }
+                                }]
+                            });
+                        },
+                        onApprove: function(data, actions) {
+                            return actions.order.capture().then(function(details) {
+                                placeOrder('paypal');
+                            });
+                        }
+                    }).render('#paypal-button-container');
+                }
+            } else {
+                paypalContainer.style.display = 'none';
+            }
+        });
 
     // Remove the old payment method radio buttons toggle code
     // Update PayPal button container styling
-    paypal.Buttons({
-        style: {
-            layout: 'vertical',
-            color: 'blue',
-            shape: 'rect',
-            label: 'paypal'
-        },
-        createOrder: function(data, actions) {
-            return actions.order.create({
-                purchase_units: [{
-                    amount: {
-                        value: '<?= ($total + 30000) / 25000 ?>' // Convert VND to USD
-                    }
-                }]
-            });
-        },
-        onApprove: function(data, actions) {
-            return actions.order.capture().then(function(details) {
-                placeOrder('paypal');
-            });
-        }
-    }).render('#paypal-button-container');
+    
 
 
 
         // Load wards when district changes
+        // Load wards when district changes
         document.getElementById('district').addEventListener('change', function() {
             const districtCode = this.value;
-            fetch(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`)
-                .then(response => response.json())
+            if (!districtCode) {
+                const wardSelect = document.getElementById('ward');
+                wardSelect.innerHTML = '<option value="">Chọn Phường/Xã</option>';
+                return;
+            }
+
+            const wardSelect = document.getElementById('ward');
+            wardSelect.innerHTML = '<option value="">Chọn Phường/Xã</option>';
+
+            // Ensure district code is valid before making API call
+            const code = parseInt(districtCode);
+            if (isNaN(code)) {
+                console.error('Invalid district code:', districtCode);
+                return;
+            }
+
+            fetch(`https://provinces.open-api.vn/api/d/${code}?depth=2`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
                 .then(data => {
-                    const wardSelect = document.getElementById('ward');
-                    wardSelect.innerHTML = '<option value="">Chọn Phường/Xã</option>';
-                    data.wards.forEach(ward => {
-                        wardSelect.innerHTML += `<option value="${ward.code}">${ward.name}</option>`;
+                    if (data && data.wards && Array.isArray(data.wards)) {
+                        data.wards.forEach(ward => {
+                            const option = new Option(ward.name, ward.code);
+                            wardSelect.add(option);
+                        });
+                    } else {
+                        throw new Error('Invalid ward data format');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading wards:', error);
+                    wardSelect.innerHTML = '<option value="">Không thể tải danh sách phường/xã</option>';
+                    
+                    Swal.fire({
+                        title: "Lỗi!",
+                        text: "Không thể tải danh sách phường/xã. Vui lòng thử lại sau.",
+                        icon: "error"
                     });
                 });
         });
@@ -251,48 +320,82 @@ include 'header.php';
         });
 
         // PayPal integration
-        paypal.Buttons({
-            createOrder: function(data, actions) {
-                return actions.order.create({
-                    purchase_units: [{
-                        amount: {
-                            value: '<?= ($total + 30000) / 23000 ?>' // Convert VND to USD
-                        }
-                    }]
-                });
-            },
-            onApprove: function(data, actions) {
-                return actions.order.capture().then(function(details) {
-                    placeOrder('paypal');
-                });
-            }
-        }).render('#paypal-button-container');
+       
 
         function placeOrder(paymentMethod = 'cod') {
-            // Collect form data and submit order
-            const formData = new FormData(document.getElementById('checkoutForm'));
-            formData.append('payment_method', paymentMethod);
+            // Validate form
+            const form = document.getElementById('checkoutForm');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            // Get form data and address elements
+            const formData = new FormData(form);
+            const province = document.getElementById('province');
+            const district = document.getElementById('district');
+            const ward = document.getElementById('ward');
             
-            fetch('process_order.php', {
+            // Validate address selection
+            if (!province.value || !district.value || !ward.value) {
+                Swal.fire({
+                    title: "Lỗi!",
+                    text: "Vui lòng chọn đầy đủ địa chỉ (Tỉnh/Thành phố, Quận/Huyện, Phường/Xã)",
+                    icon: "error"
+                });
+                return;
+            }
+            
+            // Construct full address
+            const fullAddress = `${formData.get('address')}, ${ward.options[ward.selectedIndex].text}, ${district.options[district.selectedIndex].text}, ${province.options[province.selectedIndex].text}`;
+
+            // Prepare order data
+            const orderData = {
+                fullname: formData.get('fullname'),
+                phone: formData.get('phone'),
+                address: fullAddress,
+                payment_method: paymentMethod,
+                total_amount: <?= $total + 30000 ?>,
+                type: '<?= $_GET['type'] ?>',
+                items: '<?= isset($_GET['productId']) ? $_GET['productId'] . "_" . ($_GET['quantity'] ?? 1) : ($_GET['items'] ?? "") ?>'
+            };
+
+            // Send order to server
+            fetch('tao_don_hang.php', {
                 method: 'POST',
-                body: formData
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(orderData)
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
                     Swal.fire({
                         title: "Thành công!",
-                        text: "Đơn hàng của bạn đã được đặt thành công",
+                        text: "Đơn hàng của bạn đã được tạo thành công",
                         icon: "success"
                     }).then(() => {
-                        window.location.href = 'order_success.php';
+                        window.location.href = 'index.php';
                     });
+                } else {
+                    throw new Error(data.message || 'Đặt hàng không thành công');
                 }
+            })
+            .catch(error => {
+                Swal.fire({
+                    title: "Lỗi!",
+                    text: error.message || "Có lỗi xảy ra khi xử lý đơn hàng",
+                    icon: "error"
+                });
             });
         }
     </script>
 
     <style>
+        .text-decoration-line-through {
+    text-decoration: line-through;
+}
         body {
         background-image: url('images/anh-nen-pp.jpg');
         background-repeat: no-repeat;
