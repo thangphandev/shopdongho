@@ -142,6 +142,9 @@ include 'header.php';
                                             alt="<?php echo htmlspecialchars($product['tensanpham']); ?>"
                                             title="<?php echo htmlspecialchars($product['tensanpham']); ?>">
                                         <div class="status status--available">Có sẵn</div>
+                                        <?php if (!empty($product['gia_giam'])): ?>
+                                        <div class="status status--discount">-<?php echo number_format($product['gia_giam'], 0, ',', '.'); ?>đ</div>
+                                    <?php endif; ?>
                                     </a>
                                     <p class="clc1 text-uppercase fs15">MSP: <?php echo htmlspecialchars($product['idsanpham']); ?></p>
                                     <h3>
@@ -185,6 +188,9 @@ include 'header.php';
                                             data-src="<?php echo htmlspecialchars($product['path_anh_goc'] ?? 'images/no-image.jpg'); ?>"
                                             alt="<?php echo htmlspecialchars($product['tensanpham']); ?>"
                                             title="<?php echo htmlspecialchars($product['tensanpham']); ?>">
+                                            <?php if (!empty($product['gia_giam'])): ?>
+                                                <div class="status status--discount">-<?php echo number_format($product['gia_giam'], 0, ',', '.'); ?>đ</div>
+                                            <?php endif; ?>
                                     </a>
                                     <p class="clc1 text-uppercase fs15">MSP: <?php echo htmlspecialchars($product['idsanpham']); ?></p>
                                     <h3>
@@ -322,13 +328,7 @@ include 'header.php';
         $('#selected_price').val($(this).data('price'));
     });
 
-    // Form submission
-    $('.search-form').on('submit', function(e) {
-        if (!$('#selected_brand').val() && !$('#selected_price').val() && !$('input[name="key"]').val()) {
-            e.preventDefault();
-            alert('Vui lòng nhập từ khóa hoặc chọn tiêu chí tìm kiếm');
-        }
-    });
+    
 });
     </script>
 </body>

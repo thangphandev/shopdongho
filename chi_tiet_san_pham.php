@@ -23,6 +23,10 @@ if (!$product) {
 include 'header.php';
 ?>
 <!DOCTYPE html>
+<head><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tiny-slider/2.9.4/tiny-slider.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tiny-slider/2.9.4/min/tiny-slider.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
 <html itemscope="" itemtype="http://schema.org/WebPage" lang="vi">
 <script src="js/jquery3.2.1.min.js" defer=""></script>
 <script src="js/bootstrap.min.js" defer=""></script>
@@ -115,6 +119,11 @@ include 'header.php';
                             </div>
                             <?php if ($productImages): ?>
                                 <div class="thumbnail-images">
+                                    <div class="thumb-item">
+                                        <img src="<?php echo htmlspecialchars($product['path_anh_goc']); ?>"
+                                            alt="<?php echo htmlspecialchars($product['tensanpham']); ?>"
+                                            class="img-fluid">
+                                    </div>
                                     <?php foreach ($productImages as $image): ?>
                                         <div class="thumb-item">
                                             <img src="<?php echo htmlspecialchars($image['image_path']); ?>"
@@ -137,14 +146,14 @@ include 'header.php';
                         <p><span style="font-size: 12pt;">Bộ sưu tập: <?php echo htmlspecialchars($product['bosuutap']); ?></span></p>
                         <p><span style="font-size: 12pt;">Xuất xứ: <?php echo htmlspecialchars($product['xuatxu'] ?? 'Thụy Sỹ'); ?></span></p>
                         <p><span style="font-size: 12pt;">Dòng: <?php echo htmlspecialchars($product['tendanhmuc']); ?></span></p>
-                        <p><span style="font-size: 12pt;">Loại máy: <?php echo htmlspecialchars($product['loaimay']); ?></span></p>
-                        <p><span style="font-size: 12pt;">Kích thước: <?php echo htmlspecialchars($product['kichthuoc']); ?></span></p>
-                        <p><span style="font-size: 12pt;">Độ dày: <?php echo htmlspecialchars($product['doday']); ?></span></p>
+                        <p><span style="font-size: 12pt;">Loại máy: <?php echo htmlspecialchars($product['ten_loai_may']) . ' -- Chi tiết: ' . htmlspecialchars($product['mo_ta_loai_may']); ?></span></p>
+                        <p><span style="font-size: 12pt;">Kích thước: <?php echo htmlspecialchars($product['kichthuoc']); ?> mm</span></p>
+                        <p><span style="font-size: 12pt;">Độ dày: <?php echo htmlspecialchars($product['doday']); ?> mm</span></p>
                         <p><span style="font-size: 12pt;">Mặt kính: <?php echo htmlspecialchars($product['matkinh']); ?></span></p>
                         <p><span style="font-size: 12pt;">Chất liệu vỏ: <?php echo htmlspecialchars($product['chatlieuvo']); ?></span></p>
-                        <p><span style="font-size: 12pt;">Dây đeo: <?php echo htmlspecialchars($product['loaiday']); ?></span></p>
+                        <p><span style="font-size: 12pt;">Dây đeo: <?php echo htmlspecialchars($product['ten_loai_day']). ' -- Chi tiết: ' . htmlspecialchars($product['mo_ta_loai_day']); ?></span></p>
                         <p><span style="font-size: 12pt;">Màu sắc: <?php echo htmlspecialchars($product['mausac']); ?></span></p>
-                        <p><span style="font-size: 12pt;">Chống nước: <?php echo htmlspecialchars($product['chongnuoc']); ?></span></p>
+                        <p><span style="font-size: 12pt;">Chống nước: <?php echo htmlspecialchars($product['chongnuoc']); ?> ATM</span></p>
                         <p><span style="font-size: 12pt;">Tính năng đặc biệt: <?php echo htmlspecialchars($product['tinhnangdacbiet']); ?></span></p>
                         <p><span style="font-size: 12pt;">Chính sách bảo hành: <?php echo htmlspecialchars($product['chinhsachbaohanh']); ?></span></p>
                     </div>

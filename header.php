@@ -6,15 +6,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $connect = new Connect();
 
-    if ($connect->login($email, $matkhau)) {
-        // Successful login
-        header('Location: index.php');
-        exit();
-    } else {
-        // Failed login
-        header('Location: login.php?error=1&message=' . urlencode('Email hoặc mật khẩu không đúng'));
-        exit();
-    }
+    // if ($connect->login($email, $matkhau)) {
+    //     // Successful login
+    //     header('Location: index.php');
+    //     exit();
+    // } else {
+    //     // Failed login
+    //     header('Location: login.php?error=1&message=' . urlencode('Email hoặc mật khẩu không đúng'));
+    //     exit();
+    // }
 }
 ?>
 <!DOCTYPE html>
@@ -172,73 +172,78 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="search-wrapper">
             <div class="container">
                 <!-- ... existing search header ... -->
-                <div class="search-content">
-                    <form class="form_fast_search search-form" method="POST" action="tim-kiem" rel="nofollow">
+                <div class="search-content scrollable-content">
+                    <form class="form_fast_search search-form" method="GET" action="tim_kiem.php" rel="nofollow">
                         <div class="quick-search mb-4">
                             <input type="text" name="key" class="form-control h-input fs24" placeholder="Tìm kiếm nhanh">
                         </div>
                         <div class="advanced-search">
                             <!-- Brand checkboxes -->
                             <div class="search-section mb-4">
-                                <h4>Thương hiệu</h4>
-                                <div class="checkbox-group">
-                                    <label class="checkbox-item">
-                                        <input type="checkbox" name="brands[]" value="rolex">
-                                        <span class="checkbox-text">Rolex</span>
-                                    </label>
-                                    <label class="checkbox-item">
-                                        <input type="checkbox" name="brands[]" value="hublot">
-                                        <span class="checkbox-text">Hublot</span>
-                                    </label>
-                                    <label class="checkbox-item">
-                                        <input type="checkbox" name="brands[]" value="richard-mille">
-                                        <span class="checkbox-text">Richard Mille</span>
-                                    </label>
-                                    <label class="checkbox-item">
-                                        <input type="checkbox" name="brands[]" value="patek-philippe">
-                                        <span class="checkbox-text">Patek Philippe</span>
-                                    </label>
-                                    <label class="checkbox-item">
-                                        <input type="checkbox" name="brands[]" value="corum">
-                                        <span class="checkbox-text">Corum</span>
-                                    </label>
-                                    <label class="checkbox-item">
-                                        <input type="checkbox" name="brands[]" value="audemars-piguet">
-                                        <span class="checkbox-text">Audemars Piguet</span>
-                                    </label>
-                                    <label class="checkbox-item">
-                                        <input type="checkbox" name="brands[]" value="jacob-co">
-                                        <span class="checkbox-text">Jacob&amp;Co</span>
-                                    </label>
-                                    <label class="checkbox-item">
-                                        <input type="checkbox" name="brands[]" value="chopard">
-                                        <span class="checkbox-text">Chopard</span>
-                                    </label>
-                                    <label class="checkbox-item">
-                                        <input type="checkbox" name="brands[]" value="vacheron-constantin">
-                                        <span class="checkbox-text">Vacheron Constantin</span>
-                                    </label>
-                                    <label class="checkbox-item">
-                                        <input type="checkbox" name="brands[]" value="zenith">
-                                        <span class="checkbox-text">Zenith</span>
-                                    </label>
-                                    <label class="checkbox-item">
-                                        <input type="checkbox" name="brands[]" value="piaget">
-                                        <span class="checkbox-text">Piaget</span>
-                                    </label>
-                                    <label class="checkbox-item">
-                                        <input type="checkbox" name="brands[]" value="bvlgari">
-                                        <span class="checkbox-text">BVLGARI</span>
-                                    </label>
-                                    <label class="checkbox-item">
-                                        <input type="checkbox" name="brands[]" value="chanel">
-                                        <span class="checkbox-text">Chanel</span>
-                                    </label>
-                                </div>
+                            <h4><strong style="color:#dbaf56">Thương hiệu</strong></h4>
+                            <div class="checkbox-group">
+                                <?php 
+                                $connect = isset($connect) ? $connect : new Connect();
+                                $brands = $connect->getAllBrands();
+                                foreach($brands as $brand): 
+                                ?>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="brands[]" value="<?= $brand['iddanhmuc'] ?>">
+                                    <span class="checkbox-text"><?= htmlspecialchars($brand['tendanhmuc']) ?></span>
+                                </label>
+                                <?php endforeach; ?>
                             </div>
+                        </div>
+                        <div class="search-section mb-4">
+                            <h4><strong style="color:#dbaf56">Loại máy</strong></h4>
+                            <div class="checkbox-group">
+                                <?php 
+                                $watchTypes = $connect->getAllWatchTypes();
+                                foreach($watchTypes as $type): 
+                                ?>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="watch_types[]" value="<?= $type['id_loai_may'] ?>">
+                                    <span class="checkbox-text"><?= htmlspecialchars($type['ten_loai_may']) ?></span>
+                                </label>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                        <div class="search-section mb-4">
+                            <h4><strong style="color:#dbaf56">Loại dây</strong></h4>
+                            <div class="checkbox-group">
+                                <?php 
+                                $strapTypes = $connect->getStrapTypes();
+                                foreach($strapTypes as $type): 
+                                ?>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="strap_types[]" value="<?= $type['id_loai_day'] ?>">
+                                    <span class="checkbox-text"><?= htmlspecialchars($type['ten_loai_day']) ?></span>
+                                </label>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+
+                        <!-- Gender -->
+                        <div class="search-section mb-4">
+                            <h4><strong style="color:#dbaf56">Giới tính</strong></h4>
+                            <div class="checkbox-group">
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="gender[]" value="nam">
+                                    <span class="checkbox-text">Nam</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="gender[]" value="nu">
+                                    <span class="checkbox-text">Nữ</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="gender[]" value="unisex">
+                                    <span class="checkbox-text">Unisex</span>
+                                </label>
+                            </div>
+                        </div>
 
                             <div class="search-section mb-4">
-                                <h4>Phân khúc giá</h4>
+                                <h4><strong style="color:#dbaf56">Phân khúc giá</strong></h4>
                                 <div class="checkbox-group">
                                     <label class="checkbox-item">
                                         <input type="checkbox" name="price_range[]" value="10000000-200000000">
@@ -266,7 +271,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                             <!-- Price range slider -->
                             <div class="search-section mb-4">
-                                <h4>Khoảng giá</h4>
+                                <h4><strong style="color:#dbaf56">Khoảng giá</strong></h4>
                                 <div class="price-range-wrapper">
                                     <div class="price-input">
                                         <div class="field">
@@ -303,6 +308,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <style>
+
+.cart-icon-wrapper {
+        position: relative;
+    }
+
+    /* ... existing styles ... */
+
+    /* Add scrollable content styles */
+    .scrollable-content {
+        max-height: 60vh;
+        overflow-y: auto;
+        padding-right: 10px;
+        margin-right: -10px;
+        scrollbar-width: thin;
+        scrollbar-color: #c8a96a rgba(255, 255, 255, 0.1);
+    }
+
+    .scrollable-content::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .scrollable-content::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+    }
+
+    .scrollable-content::-webkit-scrollbar-thumb {
+        background-color: #c8a96a;
+        border-radius: 10px;
+    }
+
+    /* Ensure the search popup is properly sized */
+    .search-wrapper {
+        position: relative;
+        background-color: #fff;
+        max-width: 800px;
+        max-height: 85vh;
+        margin: 50px auto;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        color: while;
+        background-color: rgba(0, 0, 0, 0.49);
+        overflow: hidden;
+    }
+
+
         .cart-icon-wrapper {
             position: relative;
         }
@@ -395,14 +447,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         .search-wrapper {
             position: relative;
-            background-color: #fff;
             max-width: 800px;
+            max-height: 85vh; /* Giới hạn chiều cao tối đa */
             margin: 50px auto;
             padding: 30px;
             border-radius: 8px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-            color: while;
-            background-color: rgba(0, 0, 0, 0.49);
+            background-color: rgba(0, 0, 0, 0.7); /* Tăng độ tối nền để dễ đọc */
+            overflow: hidden; /* Ngăn nội dung tràn ra ngoài */
+        }
+        .search-content.scrollable-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .search-content.scrollable-content::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .search-content.scrollable-content::-webkit-scrollbar-thumb {
+            background-color: #c8a96a;
+            border-radius: 10px;
+        }
+
+        .search-content.scrollable-content {
+            max-height: 70vh; /* Đặt chiều cao tối đa nhỏ hơn search-wrapper để dành chỗ cho padding */
+            overflow-y: auto; /* Kích hoạt cuộn dọc */
+            padding-right: 10px; /* Khoảng cách để tránh chồng lấn thanh cuộn */
+            margin-right: -10px; /* Bù lại padding để căn chỉnh */
+            scrollbar-width: thin; /* Thanh cuộn mỏng cho Firefox */
+            scrollbar-color: #c8a96a rgba(255, 255, 255, 0.1); /* Màu thanh cuộn */
         }
 
         .search-header {

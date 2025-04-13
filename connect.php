@@ -71,8 +71,11 @@ class connect {
     }        
     public function getProductsByCategory($categoryId) {
         try {
-            $query = "SELECT DISTINCT s.*, h.duongdan as image_path, d.tendanhmuc
+            $query = "SELECT DISTINCT s.*, h.duongdan as image_path, d.tendanhmuc , k.gia_giam,
+                        k.ngaybatdau,
+                        k.ngayketthuc 
                     FROM sanpham s 
+                    LEFT JOIN khuyenmai k ON s.idkhuyenmai = k.idkhuyenmai
                     LEFT JOIN hinhanhsanpham h ON s.idsanpham = h.idsanpham
                     LEFT JOIN danhmuc d ON s.iddanhmuc = d.iddanhmuc
                     WHERE s.iddanhmuc = :categoryId
@@ -91,11 +94,15 @@ class connect {
     public function getProductDetails($productId) {
     try {
         $query = "SELECT s.*, h.duongdan as image_path, d.tendanhmuc,
-                    k.gia_giam, k.ngaybatdau, k.ngayketthuc 
+                    k.gia_giam, k.ngaybatdau, k.ngayketthuc ,loaiday.ten_loai_day, loaiday.mo_ta_loai_day,
+                    loaimay.mo_ta_loai_may,
+                    loaimay.ten_loai_may
                 FROM sanpham s 
                 LEFT JOIN hinhanhsanpham h ON s.idsanpham = h.idsanpham 
                 LEFT JOIN danhmuc d ON s.iddanhmuc = d.iddanhmuc
-                LEFT JOIN khuyenmai k ON s.idkhuyenmai = k.idkhuyenmai
+                LEFT JOIN loaiday  ON s.loaiday = loaiday.id_loai_day
+                LEFT JOIN loaimay  ON s.loaimay = loaimay.id_loai_may
+                LEFT JOIN khuyenmai k ON s.idkhuyenmai = k.idkhuyenmai                
                 WHERE s.idsanpham = :productId 
                 AND (k.ngayketthuc IS NULL OR k.ngayketthuc >= CURRENT_TIMESTAMP)
                 AND (k.ngaybatdau IS NULL OR k.ngaybatdau <= CURRENT_TIMESTAMP)
@@ -109,6 +116,149 @@ class connect {
         return false;
     }
 }
+
+//tìm kiếm sản phầm theo form
+public function searchProducts($keyword, $brands, $watch_types, $strap_types, $gender, $price_ranges, $min_price, $max_price) {
+    try {
+        $conditions = [];
+        $params = [];
+        
+        // Base query
+        $query = "SELECT DISTINCT s.*, h.duongdan as image_path, d.tendanhmuc,
+                    k.gia_giam, k.ngaybatdau, k.ngayketthuc,
+                    loaiday.ten_loai_day, loaimay.ten_loai_may
+                FROM sanpham s 
+                LEFT JOIN hinhanhsanpham h ON s.idsanpham = h.idsanpham 
+                LEFT JOIN danhmuc d ON s.iddanhmuc = d.iddanhmuc
+                LEFT JOIN loaiday ON s.loaiday = loaiday.id_loai_day
+                LEFT JOIN loaimay ON s.loaimay = loaimay.id_loai_may
+                LEFT JOIN khuyenmai k ON s.idkhuyenmai = k.idkhuyenmai
+                WHERE s.trangthai = 1";
+        
+        // Keyword search
+        if (!empty($keyword)) {
+            $conditions[] = "(s.tensanpham LIKE :keyword OR s.mota LIKE :keyword OR d.tendanhmuc LIKE :keyword)";
+            $params[':keyword'] = "%$keyword%";
+        }
+        
+        // Brand filter
+        if (!empty($brands)) {
+            $placeholders = [];
+            foreach ($brands as $key => $brand) {
+                $param = ":brand$key";
+                $placeholders[] = $param;
+                $params[$param] = $brand;
+            }
+            $conditions[] = "s.iddanhmuc IN (" . implode(", ", $placeholders) . ")";
+        }
+        
+        // Watch type filter
+        if (!empty($watch_types)) {
+            $placeholders = [];
+            foreach ($watch_types as $key => $type) {
+                $param = ":watchType$key";
+                $placeholders[] = $param;
+                $params[$param] = $type;
+            }
+            $conditions[] = "s.loaimay IN (" . implode(", ", $placeholders) . ")";
+        }
+        
+        // Strap type filter
+        if (!empty($strap_types)) {
+            $placeholders = [];
+            foreach ($strap_types as $key => $type) {
+                $param = ":strapType$key";
+                $placeholders[] = $param;
+                $params[$param] = $type;
+            }
+            $conditions[] = "s.loaiday IN (" . implode(", ", $placeholders) . ")";
+        }
+        
+        // Gender filter
+        if (!empty($gender)) {
+            $placeholders = [];
+            foreach ($gender as $key => $g) {
+                $param = ":gender$key";
+                $placeholders[] = $param;
+                $params[$param] = $g;
+            }
+            $conditions[] = "s.gioitinh IN (" . implode(", ", $placeholders) . ")";
+        }
+        
+        // Price range filter from checkboxes
+        if (!empty($price_ranges)) {
+            $priceConditions = [];
+            foreach ($price_ranges as $key => $range) {
+                list($min, $max) = explode('-', $range);
+                $priceConditions[] = "(s.giaban >= $min AND s.giaban <= $max)";
+            }
+            $conditions[] = "(" . implode(" OR ", $priceConditions) . ")";
+        }
+        
+        // Price range filter from slider
+        if ($min_price > 0 || $max_price < PHP_INT_MAX) {
+            $conditions[] = "(s.giaban >= :min_price AND s.giaban <= :max_price)";
+            $params[':min_price'] = $min_price;
+            $params[':max_price'] = $max_price;
+        }
+        
+        // Add conditions to query
+        if (!empty($conditions)) {
+            $query .= " AND " . implode(" AND ", $conditions);
+        }
+        
+        // Group by and order
+        $query .= " GROUP BY s.idsanpham ORDER BY s.ngaytao DESC";
+        
+        $stmt = $this->conn->prepare($query);
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value);
+        }
+        $stmt->execute();
+        
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch(PDOException $e) {
+        error_log("Error in searchProducts: " . $e->getMessage());
+        return [];
+    }
+}
+    // Add these new methods
+    public function getAllBrands() {
+        try {
+            $query = "SELECT iddanhmuc, tendanhmuc 
+                      FROM danhmuc 
+                      WHERE trangthai = 1 
+                      ORDER BY tendanhmuc";
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            error_log("Error in getAllBrands: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function getWatchTypes() {
+        try {
+            $query = "SELECT * FROM loaimay ";
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            return [];
+        }
+    }
+
+    public function getStrapTypes() {
+        try {
+            $query = "SELECT * FROM loaiday";
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            return [];
+        }
+    }
 
     public function getRelatedProducts($categoryId, $currentProductId, $limit = 10) {
         try {
@@ -148,24 +298,7 @@ class connect {
         }
     }
 
-    public function addProduct($name, $code, $status, $image, $url) {
-        try {
-            $query = "INSERT INTO products (name, code, status, image, url) 
-                     VALUES (:name, :code, :status, :image, :url)";
-            $stmt = $this->conn->prepare($query);
-            
-            $stmt->bindParam(":name", $name);
-            $stmt->bindParam(":code", $code);
-            $stmt->bindParam(":status", $status);
-            $stmt->bindParam(":image", $image);
-            $stmt->bindParam(":url", $url);
-            
-            return $stmt->execute();
-        } catch(PDOException $e) {
-            echo "Error: " . $e->getMessage();
-            return false;
-        }
-    }
+    
 
 //hàm tương tác với đon hàng
     public function getUserOrders($userId) {
@@ -235,39 +368,9 @@ class connect {
     }
 
 
-    public function updateProduct($id, $name, $code, $status, $image, $url) {
-        try {
-            $query = "UPDATE products 
-                     SET name = :name, code = :code, status = :status, 
-                         image = :image, url = :url 
-                     WHERE id = :id";
-            $stmt = $this->conn->prepare($query);
-            
-            $stmt->bindParam(":id", $id);
-            $stmt->bindParam(":name", $name);
-            $stmt->bindParam(":code", $code);
-            $stmt->bindParam(":status", $status);
-            $stmt->bindParam(":image", $image);
-            $stmt->bindParam(":url", $url);
-            
-            return $stmt->execute();
-        } catch(PDOException $e) {
-            echo "Error: " . $e->getMessage();
-            return false;
-        }
-    }
 
-    public function deleteProduct($id) {
-        try {
-            $query = "DELETE FROM products WHERE id = :id";
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(":id", $id);
-            return $stmt->execute();
-        } catch(PDOException $e) {
-            echo "Error: " . $e->getMessage();
-            return false;
-        }
-    }
+
+   
 
     // News connect
     public function getNews() {
@@ -683,12 +786,1037 @@ class connect {
         }
     }
 
+
+
+    //trang admin
+    //tính tổng lợi nhuận
+    public function calculateProfit($month = null, $year = null) {
+        try {
+            $query = "SELECT SUM(cd.giaban * cd.soluong - s.gianhap * cd.soluong) as total_profit
+                      FROM chitietdonhang cd
+                      JOIN sanpham s ON cd.idsanpham = s.idsanpham
+                      JOIN donhang d ON cd.iddonhang = d.iddonhang
+                      WHERE d.trangthai = 'Hoàn thành'";
+            
+            // Add date filters if provided
+            if ($month !== null && $year !== null) {
+                $query .= " AND MONTH(d.ngaydat) = :month AND YEAR(d.ngaydat) = :year";
+            } else if ($year !== null) {
+                $query .= " AND YEAR(d.ngaydat) = :year";
+            }
+            
+            $stmt = $this->conn->prepare($query);
+            
+            // Bind parameters if provided
+            if ($month !== null && $year !== null) {
+                $stmt->bindParam(':month', $month, PDO::PARAM_INT);
+                $stmt->bindParam(':year', $year, PDO::PARAM_INT);
+            } else if ($year !== null) {
+                $stmt->bindParam(':year', $year, PDO::PARAM_INT);
+            }
+            
+            $stmt->execute();
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            return $result['total_profit'] ?? 0;
+        } catch(PDOException $e) {
+            error_log("Error calculating profit: " . $e->getMessage());
+            return 0;
+        }
+    }
+
+    // lấy sản phẩm bán chạy nhất
+    public function getTopSellingProducts($limit = 5, $month = null, $year = null) {
+        try {
+            $query = "SELECT s.idsanpham, s.tensanpham, s.path_anh_goc, s.giaban, s.soluong,
+                      SUM(cd.soluong) as total_sold,
+                      SUM(cd.giaban * cd.soluong) as total_revenue
+                      FROM chitietdonhang cd
+                      JOIN sanpham s ON cd.idsanpham = s.idsanpham
+                      JOIN donhang d ON cd.iddonhang = d.iddonhang
+                      WHERE d.trangthai = 'Hoàn thành'";
+            
+            // Add date filters if provided
+            if ($month !== null && $year !== null) {
+                $query .= " AND MONTH(d.ngaydat) = :month AND YEAR(d.ngaydat) = :year";
+            } else if ($year !== null) {
+                $query .= " AND YEAR(d.ngaydat) = :year";
+            }
+            
+            $query .= " GROUP BY s.idsanpham
+                      ORDER BY total_sold DESC
+                      LIMIT :limit";
+            
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
+            
+            // Bind parameters if provided
+            if ($month !== null && $year !== null) {
+                $stmt->bindParam(':month', $month, PDO::PARAM_INT);
+                $stmt->bindParam(':year', $year, PDO::PARAM_INT);
+            } else if ($year !== null) {
+                $stmt->bindParam(':year', $year, PDO::PARAM_INT);
+            }
+            
+            $stmt->execute();
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            error_log("Error getting top selling products: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    // lấy danh sách sản phẩm sắp hết hàng
+    public function getLowStockProducts($threshold = 5, $limit = 8) {
+        try {
+            $query = "SELECT s.idsanpham, s.tensanpham, s.path_anh_goc, s.giaban, s.soluong,
+                      d.tendanhmuc
+                      FROM sanpham s
+                      LEFT JOIN danhmuc d ON s.iddanhmuc = d.iddanhmuc
+                      WHERE s.soluong <= :threshold AND s.trangthai = 1
+                      ORDER BY s.soluong ASC
+                      LIMIT :limit";
+            
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':threshold', $threshold, PDO::PARAM_INT);
+            $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            error_log("Error getting low stock products: " . $e->getMessage());
+            return [];
+        }
+    }
+    //top sản phẩm có doanh thu cao nhất
+    public function getTopProfitProducts($limit = 5) {
+        try {
+            $query = "SELECT s.idsanpham, s.tensanpham, s.path_anh_goc,
+                      SUM(cd.soluong) as total_sold,
+                      SUM(cd.giaban * cd.soluong) as total_revenue,
+                      SUM(cd.giaban * cd.soluong - s.gianhap * cd.soluong) as total_profit
+                      FROM chitietdonhang cd
+                      JOIN sanpham s ON cd.idsanpham = s.idsanpham
+                      JOIN donhang d ON cd.iddonhang = d.iddonhang
+                      WHERE d.trangthai = 'Đã giao hàng'
+                      GROUP BY s.idsanpham
+                      ORDER BY total_profit DESC
+                      LIMIT :limit";
+            
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            error_log("Error getting top profit products: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    
+    
+    public function checkPermission($userId, $requiredRole) {
+        try {
+            $query = "SELECT role FROM nguoidung WHERE idnguoidung = :userId LIMIT 1";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':userId', $userId);
+            $stmt->execute();
+            
+            if($stmt->rowCount() > 0) {
+                $user = $stmt->fetch(PDO::FETCH_ASSOC);
+                return $user['role'] >= $requiredRole;
+            }
+            return false;
+        } catch(PDOException $e) {
+            error_log("Permission check error: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    // Product management functions
+    public function getAllProducts($search = '', $category = '', $sort = '', $order = 'ASC') {
+        try {
+            $query = "SELECT s.*, d.tendanhmuc 
+                      FROM sanpham s
+                      LEFT JOIN danhmuc d ON s.iddanhmuc = d.iddanhmuc
+                      WHERE 1=1";
+            
+            $params = [];
+            
+            // Add search condition if provided
+            if (!empty($search)) {
+                $query .= " AND (s.tensanpham LIKE :search OR s.mota LIKE :search)";
+                $params[':search'] = "%$search%";
+            }
+            
+            // Add category filter if provided
+            if (!empty($category)) {
+                $query .= " AND s.iddanhmuc = :category";
+                $params[':category'] = $category;
+            }
+            
+            // Add sorting
+            if (!empty($sort)) {
+                $query .= " ORDER BY $sort $order";
+            } else {
+                $query .= " ORDER BY s.ngaytao DESC";
+            }
+            
+            $stmt = $this->conn->prepare($query);
+            
+            // Bind parameters
+            foreach ($params as $key => $value) {
+                $stmt->bindValue($key, $value);
+            }
+            
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            error_log("Error getting all products: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    //lấy thôngn tin sản phẩm
+    public function getProductById($id) {
+        try {
+            $query = "SELECT s.*, d.tendanhmuc 
+                      FROM sanpham s
+                      LEFT JOIN danhmuc d ON s.iddanhmuc = d.iddanhmuc
+                      WHERE s.idsanpham = :id";
+            
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            $product = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($product) {
+                // Get additional images
+                $product['additional_images'] = $this->getProductImages($id);
+            }
+            
+            return $product;
+        } catch(PDOException $e) {
+            error_log("Error getting product by ID: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    //thêm san phẩm mới
+    public function addProduct($data) {
+        try {
+            $query = "INSERT INTO sanpham (
+                tensanpham, mota, giaban, gianhap, soluong, iddanhmuc, 
+                loaiday, loaimay, gioitinh, path_anh_goc, trangthai, idkhuyenmai,
+                bosuutap, chatlieuvo, matkinh, mausac, kichthuoc, doday,
+                chongnuoc, tinhnangdacbiet, chinhsachbaohanh, idnhacungcap, ngaytao
+            ) VALUES (
+                :tensanpham, :mota, :giaban, :gianhap, :soluong, :iddanhmuc,
+                :loaiday, :loaimay, :gioitinh, :path_anh_goc, :trangthai, :idkhuyenmai,
+                :bosuutap, :chatlieuvo, :matkinh, :mausac, :kichthuoc, :doday,
+                :chongnuoc, :tinhnangdacbiet, :chinhsachbaohanh, :idnhacungcap, NOW()
+            )";
+            
+            $stmt = $this->conn->prepare($query);
+            
+            // Bind all parameters
+            $stmt->bindParam(':tensanpham', $data['tensanpham']);
+            $stmt->bindParam(':mota', $data['mota']);
+            $stmt->bindParam(':giaban', $data['giaban']);
+            $stmt->bindParam(':gianhap', $data['gianhap']);
+            $stmt->bindParam(':soluong', $data['soluong']);
+            $stmt->bindParam(':iddanhmuc', $data['iddanhmuc']);
+            $stmt->bindParam(':loaiday', $data['loaiday']);
+            $stmt->bindParam(':loaimay', $data['loaimay']);
+            $stmt->bindParam(':gioitinh', $data['gioitinh']);
+            $stmt->bindParam(':path_anh_goc', $data['path_anh_goc']);
+            $stmt->bindParam(':trangthai', $data['trangthai']);
+            $stmt->bindParam(':idkhuyenmai', $data['idkhuyenmai']);
+            $stmt->bindParam(':bosuutap', $data['bosuutap']);
+            $stmt->bindParam(':chatlieuvo', $data['chatlieuvo']);
+            $stmt->bindParam(':matkinh', $data['matkinh']);
+            $stmt->bindParam(':mausac', $data['mausac']);
+            $stmt->bindParam(':kichthuoc', $data['kichthuoc']);
+            $stmt->bindParam(':doday', $data['doday']);
+            $stmt->bindParam(':chongnuoc', $data['chongnuoc']);
+            $stmt->bindParam(':tinhnangdacbiet', $data['tinhnangdacbiet']);
+            $stmt->bindParam(':chinhsachbaohanh', $data['chinhsachbaohanh']);
+            $stmt->bindParam(':idnhacungcap', $data['idnhacungcap']);
+            
+            $stmt->execute();
+            return $this->conn->lastInsertId();
+        } catch(PDOException $e) {
+            error_log("Error adding product: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    //cập nhật sản phẩm
+    public function updateProduct($id, $data) {
+        try {
+            $query = "UPDATE sanpham SET 
+                      tensanpham = :tensanpham,
+                      mota = :mota,
+                      giaban = :giaban,
+                      gianhap = :gianhap,
+                      soluong = :soluong,
+                      iddanhmuc = :iddanhmuc,
+                      loaiday = :loaiday,
+                      loaimay = :loaimay,
+                      gioitinh = :gioitinh,
+                      trangthai = :trangthai,
+                      idkhuyenmai = :idkhuyenmai";
+            
+            // Only update image if a new one is provided
+            if (!empty($data['path_anh_goc'])) {
+                $query .= ", path_anh_goc = :path_anh_goc";
+            }
+            
+            $query .= " WHERE idsanpham = :id";
+            
+            $stmt = $this->conn->prepare($query);
+            
+            // Bind parameters
+            $stmt->bindParam(':tensanpham', $data['tensanpham']);
+            $stmt->bindParam(':mota', $data['mota']);
+            $stmt->bindParam(':giaban', $data['giaban']);
+            $stmt->bindParam(':gianhap', $data['gianhap']);
+            $stmt->bindParam(':soluong', $data['soluong']);
+            $stmt->bindParam(':iddanhmuc', $data['iddanhmuc']);
+            $stmt->bindParam(':loaiday', $data['loaiday']);
+            $stmt->bindParam(':loaimay', $data['loaimay']);
+            $stmt->bindParam(':gioitinh', $data['gioitinh']);
+            $stmt->bindParam(':trangthai', $data['trangthai']);
+            $stmt->bindParam(':idkhuyenmai', $data['idkhuyenmai']);
+            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+            
+            // Only bind image parameter if a new one is provided
+            if (!empty($data['path_anh_goc'])) {
+                $stmt->bindParam(':path_anh_goc', $data['path_anh_goc']);
+            }
+            
+            return $stmt->execute();
+        } catch(PDOException $e) {
+            error_log("Error updating product: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    //xóa sản phẩm
+    public function deleteProduct($id) {
+        try {
+            $this->conn->beginTransaction();
+
+            // kiểm tra xem sản phẩm có trong đơn hàng chưa
+            $query = "SELECT COUNT(*) as count FROM chitietdonhang WHERE idsanpham = :id";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+            $stmt->execute();
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($result['count'] > 0) {
+                // Product is in orders, just update status to inactive
+                $query = "UPDATE sanpham SET trangthai = 0 WHERE idsanpham = :id";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+                $success = $stmt->execute();
+            } else {
+                // Delete additional images first
+                $this->deleteProductImages($id);
+                
+                // Then delete the product
+                $query = "DELETE FROM sanpham WHERE idsanpham = :id";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+                $success = $stmt->execute();
+            }
+
+            $this->conn->commit();
+            return $success;
+        } catch(PDOException $e) {
+            $this->conn->rollBack();
+            error_log("Error deleting product: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    //lấy tất cả hình ảnh sản phẩm
+    public function getProductImages($productId) {
+        try {
+            $query = "SELECT * FROM hinhanhsanpham WHERE idsanpham = :productId";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':productId', $productId);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            error_log("Error getting product images: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    //thêm hình ảnh phụ sản phẩm
+    public function addProductImages($productId, $imagePaths) {
+        try {
+            $query = "INSERT INTO hinhanhsanpham (idsanpham, duongdan) VALUES (:productId, :path)";
+            $stmt = $this->conn->prepare($query);
+            
+            foreach ($imagePaths as $path) {
+                $stmt->execute([
+                    ':productId' => $productId,
+                    ':path' => $path
+                ]);
+            }
+            return true;
+        } catch(PDOException $e) {
+            error_log("Error adding product images: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    //xóa hình ảnh phụ sản phẩm
+    public function deleteProductImages($productId) {
+        try {
+            $query = "DELETE FROM hinhanhsanpham WHERE idsanpham = :productId";
+            $stmt = $this->conn->prepare($query);
+            return $stmt->execute([':productId' => $productId]);
+        } catch(PDOException $e) {
+            error_log("Error deleting product images: " . $e->getMessage());
+            return false;
+        }
+    }
+    // lấy tất cả bộ suu tập
+    public function getAllSuppliers($search = '') {
+        try {
+            $query = "SELECT * FROM nhacungcap WHERE 1=1";
+            $params = [];
+    
+            if (!empty($search)) {
+                $query .= " AND tennhacungcap LIKE :search";
+                $params[':search'] = "%$search%";
+            }
+    
+            $query .= " ORDER BY idnhacungcap ASC";
+            
+            $stmt = $this->conn->prepare($query);
+            
+            if (!empty($params)) {
+                foreach ($params as $key => $value) {
+                    $stmt->bindValue($key, $value);
+                }
+            }
+            
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            error_log("Error getting suppliers: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    public function addSupplier($data) {
+        try {
+            $query = "INSERT INTO nhacungcap (tennhacungcap, diachi, sdt) 
+                      VALUES (:tennhacungcap, :diachi, :sdt)";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':tennhacungcap', $data['tennhacungcap']);
+            $stmt->bindParam(':diachi', $data['diachi']);
+            $stmt->bindParam(':sdt', $data['sdt']);
+            return $stmt->execute();
+        } catch(PDOException $e) {
+            error_log("Error adding supplier: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    public function updateSupplier($data) {
+        try {
+            $query = "UPDATE nhacungcap 
+                      SET tennhacungcap = :tennhacungcap, 
+                          diachi = :diachi, 
+                          sdt = :sdt 
+                      WHERE idnhacungcap = :idnhacungcap";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':idnhacungcap', $data['idnhacungcap']);
+            $stmt->bindParam(':tennhacungcap', $data['tennhacungcap']);
+            $stmt->bindParam(':diachi', $data['diachi']);
+            $stmt->bindParam(':sdt', $data['sdt']);
+            return $stmt->execute();
+        } catch(PDOException $e) {
+            error_log("Error updating supplier: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    public function deleteSupplier($id) {
+        try {
+            $query = "DELETE FROM nhacungcap WHERE idnhacungcap = :idnhacungcap";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':idnhacungcap', $id);
+            return $stmt->execute();
+        } catch(PDOException $e) {
+            error_log("Error deleting supplier: " . $e->getMessage());
+            return false;
+        }
+    }
+    //lấy chinh sach bao hanh
+    public function getAllWarrantyPolicies() {
+        try {
+            $query = "SELECT * FROM chinhsachbaohanh ORDER BY ngay_tao DESC";
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            error_log("Error getting warranty policies: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    //
+    public function deleteProductImage($imageId) {
+        try {
+            $this->conn->beginTransaction();
+            
+            // Get the image path first
+            $query = "SELECT duongdan FROM hinhanhsanpham WHERE idhinhanh = :id";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':id', $imageId, PDO::PARAM_INT);
+            $stmt->execute();
+            $image = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($image) {
+                // Delete the physical file
+                $filePath = __DIR__ . '/' . $image['duongdan'];
+                if (file_exists($filePath)) {
+                    unlink($filePath);
+                }
+                
+                // Delete from database
+                $query = "DELETE FROM hinhanhsanpham WHERE idhinhanh = :id";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindParam(':id', $imageId, PDO::PARAM_INT);
+                $result = $stmt->execute();
+                
+                $this->conn->commit();
+                return $result;
+            }
+            
+            $this->conn->rollBack();
+            return false;
+        } catch(PDOException $e) {
+            $this->conn->rollBack();
+            error_log("Error deleting product image: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    
+    
+    
+    
+    //lấy tất cả loại máy
+    public function getAllWatchTypes($search = '') {
+        try {
+            $query = "SELECT * FROM loaimay WHERE 1=1 ";
+            $params = [];
+    
+            if (!empty($search)) {
+                $query .= " AND ten_loai_may LIKE :search";
+                $params[':search'] = "%$search%";
+            }
+    
+            $query .= " ORDER BY id_loai_may ASC";
+            
+            $stmt = $this->conn->prepare($query);
+            
+            // Bind search parameter if it exists
+            if (!empty($params)) {
+                foreach ($params as $key => $value) {
+                    $stmt->bindValue($key, $value);
+                }
+            }
+            
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            error_log("Error getting watch types: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    //thêm loại máy
+    public function addWatchType($data) {
+        try {
+            $query = "INSERT INTO loaimay (ten_loai_may, mo_ta_loai_may, trangthai) 
+                      VALUES (:ten_loai_may, :mo_ta_loai_may, :trangthai)";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':ten_loai_may', $data['ten_loai_may']);
+            $stmt->bindParam(':mo_ta_loai_may', $data['mo_ta_loai_may']);
+            $stmt->bindParam(':trangthai', $data['trangthai']);
+            return $stmt->execute();
+        } catch(PDOException $e) {
+            error_log("Error adding watch type: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    public function updateWatchType($data) {
+        try {
+            $query = "UPDATE loaimay 
+                      SET ten_loai_may = :ten_loai_may, 
+                          mo_ta_loai_may = :mo_ta_loai_may, 
+                          trangthai = :trangthai 
+                      WHERE id_loai_may = :id_loai_may";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':id_loai_may', $data['id_loai_may']);
+            $stmt->bindParam(':ten_loai_may', $data['ten_loai_may']);
+            $stmt->bindParam(':mo_ta_loai_may', $data['mo_ta_loai_may']);
+            $stmt->bindParam(':trangthai', $data['trangthai']);
+            return $stmt->execute();
+        } catch(PDOException $e) {
+            error_log("Error updating watch type: " . $e->getMessage());
+            return false;
+        }
+    }
+
+
+    //xóa loại máy
+    public function deleteWatchType($id) {
+        try {
+            $query = "DELETE FROM loai_may WHERE id_loai_may = :id_loai_may";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':id_loai_may', $id);
+            return $stmt->execute();
+        } catch(PDOException $e) {
+            error_log("Error deleting watch type: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    
+
+
+    //lấy tất cả loại dây
+    public function getAllStrapTypes($search = '') {
+        try {
+            $query = "SELECT * FROM loaiday WHERE 1=1";
+            $params = [];
+    
+            if (!empty($search)) {
+                $query .= " AND ten_loai_day LIKE :search";
+                $params[':search'] = "%$search%";
+            }
+    
+            $query .= " ORDER BY id_loai_day ASC";
+            
+            $stmt = $this->conn->prepare($query);
+            
+            if (!empty($params)) {
+                foreach ($params as $key => $value) {
+                    $stmt->bindValue($key, $value);
+                }
+            }
+            
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            error_log("Error getting strap types: " . $e->getMessage());
+            return [];
+        }
+    }
+
+
+    public function addStrapType($data) {
+        try {
+            $query = "INSERT INTO loaiday (ten_loai_day, mo_ta_loai_day, trangthai) 
+                      VALUES (:ten_loai_day, :mo_ta_loai_day, :trangthai)";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':ten_loai_day', $data['ten_loai_day']);
+            $stmt->bindParam(':mo_ta_loai_day', $data['mo_ta_loai_day']);
+            $stmt->bindParam(':trangthai', $data['trangthai']);
+            return $stmt->execute();
+        } catch(PDOException $e) {
+            error_log("Error adding strap type: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    public function updateStrapType($data) {
+        try {
+            $query = "UPDATE loaiday 
+                      SET ten_loai_day = :ten_loai_day, 
+                          mo_ta_loai_day = :mo_ta_loai_day, 
+                          trangthai = :trangthai 
+                      WHERE id_loai_day = :id_loai_day";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':id_loai_day', $data['id_loai_day']);
+            $stmt->bindParam(':ten_loai_day', $data['ten_loai_day']);
+            $stmt->bindParam(':mo_ta_loai_day', $data['mo_ta_loai_day']);
+            $stmt->bindParam(':trangthai', $data['trangthai']);
+            return $stmt->execute();
+        } catch(PDOException $e) {
+            error_log("Error updating strap type: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    public function deleteStrapType($id) {
+        try {
+            $query = "DELETE FROM loaiday WHERE id_loai_day = :id_loai_day";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':id_loai_day', $id);
+            return $stmt->execute();
+        } catch(PDOException $e) {
+            error_log("Error deleting strap type: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    //lấy các khuyến mãi
+    public function getAllPromotions() {
+        try {
+            $query = "SELECT * FROM khuyenmai ORDER BY ngaytao DESC";
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            error_log("Error getting promotions: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    // Category management functions
+    public function getAllCategories() {
+        try {
+            $query = "SELECT * FROM danhmuc ORDER BY tendanhmuc";
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            error_log("Error in getAllCategories: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    //thêm mới danh mục
+    public function addCategory($data) {
+        try {
+            $query = "INSERT INTO danhmuc (tendanhmuc, trangthai) VALUES (:tendanhmuc, :trangthai)";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':tendanhmuc', $data['tendanhmuc']);
+            $stmt->bindParam(':trangthai', $data['trangthai']);
+            return $stmt->execute();
+        } catch(PDOException $e) {
+            error_log("Error adding category: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+
+    // cập nhật danh mục
+    public function updateCategory($data) {
+        try {
+            $query = "UPDATE danhmuc SET tendanhmuc = :tendanhmuc, trangthai = :trangthai WHERE iddanhmuc = :iddanhmuc";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':iddanhmuc', $data['iddanhmuc']);
+            $stmt->bindParam(':tendanhmuc', $data['tendanhmuc']);
+            $stmt->bindParam(':trangthai', $data['trangthai']);
+            return $stmt->execute();
+        } catch(PDOException $e) {
+            error_log("Error updating category: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    public function deleteCategory($id) {
+        try {
+            $query = "DELETE FROM danhmuc WHERE iddanhmuc = :iddanhmuc";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':iddanhmuc', $id);
+            return $stmt->execute();
+        } catch(PDOException $e) {
+            error_log("Error deleting category: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    //lấy danh sach đơn hàng
+    public function getAllOrdersAdmin($search = '', $status = '') {
+        try {
+            $query = "SELECT d.*, ct.trangthai as trangthai_tt 
+                      FROM donhang d 
+                      LEFT JOIN chitietthanhtoan ct ON d.idthanhtoan = ct.idthanhtoan 
+                      WHERE 1=1";
+            $params = [];
+    
+            if (!empty($search)) {
+                $query .= " AND (d.tennguoidat LIKE :search OR d.sdt LIKE :search)";
+                $params[':search'] = "%$search%";
+            }
+    
+            if (!empty($status)) {
+                $query .= " AND d.trangthai = :status";
+                $params[':status'] = $status;
+            }
+    
+            $query .= " ORDER BY d.ngaydat DESC";
+            
+            $stmt = $this->conn->prepare($query);
+            
+            if (!empty($params)) {
+                foreach ($params as $key => $value) {
+                    $stmt->bindValue($key, $value);
+                }
+            }
+            
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            error_log("Error getting orders: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function getOrderByIdAdmin($orderId) {
+        try {
+            $query = "SELECT d.*, ct.trangthai as trangthai_tt, ct.magiaodich 
+                      FROM donhang d 
+                      LEFT JOIN chitietthanhtoan ct ON d.idthanhtoan = ct.idthanhtoan 
+                      WHERE d.iddonhang = :id";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':id', $orderId);
+            $stmt->execute();
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            error_log("Error getting order: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function getOrderDetailsAdmin($orderId) {
+        try {
+            $query = "SELECT cd.*, sp.tensanpham, sp.idsanpham
+                      FROM chitietdonhang cd 
+                      JOIN sanpham sp ON cd.idsanpham = sp.idsanpham 
+                      WHERE cd.iddonhang = :id";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':id', $orderId);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            error_log("Error getting order details: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    public function updateOrderStatusAdmin($data) {
+        try {
+            $query = "UPDATE donhang SET trangthai = :trangthai WHERE iddonhang = :iddonhang";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':iddonhang', $data['iddonhang']);
+            $stmt->bindParam(':trangthai', $data['trangthai']);
+            return $stmt->execute();
+        } catch(PDOException $e) {
+            error_log("Error updating order status: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    // Order management functions
+    public function getAllOrders($month = null, $year = null) {
+        try {
+            $query = "SELECT d.*, u.tendangnhap 
+                      FROM donhang d 
+                      LEFT JOIN nguoidung u ON d.idnguoidung = u.idnguoidung";
+            
+            // Add date filters if provided
+            if ($month !== null && $year !== null) {
+                $query .= " WHERE MONTH(d.ngaydat) = :month AND YEAR(d.ngaydat) = :year";
+            } else if ($year !== null) {
+                $query .= " WHERE YEAR(d.ngaydat) = :year";
+            }
+            
+            $query .= " ORDER BY d.ngaydat DESC";
+            
+            $stmt = $this->conn->prepare($query);
+            
+            // Bind parameters if provided
+            if ($month !== null && $year !== null) {
+                $stmt->bindParam(':month', $month, PDO::PARAM_INT);
+                $stmt->bindParam(':year', $year, PDO::PARAM_INT);
+            } else if ($year !== null) {
+                $stmt->bindParam(':year', $year, PDO::PARAM_INT);
+            }
+            
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            error_log("Error getting all orders: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function getOrderCountsByStatus($month = null, $year = null) {
+        try {
+            $query = "SELECT trangthai, COUNT(*) as count
+                      FROM donhang";
+            
+            // Add date filters if provided
+            if ($month !== null && $year !== null) {
+                $query .= " WHERE MONTH(ngaydat) = :month AND YEAR(ngaydat) = :year";
+            } else if ($year !== null) {
+                $query .= " WHERE YEAR(ngaydat) = :year";
+            }
+            
+            $query .= " GROUP BY trangthai";
+            
+            $stmt = $this->conn->prepare($query);
+            
+            // Bind parameters if provided
+            if ($month !== null && $year !== null) {
+                $stmt->bindParam(':month', $month, PDO::PARAM_INT);
+                $stmt->bindParam(':year', $year, PDO::PARAM_INT);
+            } else if ($year !== null) {
+                $stmt->bindParam(':year', $year, PDO::PARAM_INT);
+            }
+            
+            $stmt->execute();
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            $counts = [];
+            foreach ($results as $result) {
+                $counts[$result['trangthai']] = $result['count'];
+            }
+            
+            return $counts;
+        } catch(PDOException $e) {
+            error_log("Error getting order counts by status: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    public function updateOrderStatus($orderId, $status) {
+        try {
+            $query = "UPDATE donhang SET trangthai = :trangthai WHERE iddonhang = :iddonhang";
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute([
+                ':trangthai' => $status,
+                ':iddonhang' => $orderId
+            ]);
+            return true;
+        } catch(PDOException $e) {
+            error_log("Error in updateOrderStatus: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    public function updatePaymentStatus($paymentId, $status) {
+        try {
+            $query = "UPDATE chitietthanhtoan SET trangthai = :trangthai WHERE idthanhtoan = :idthanhtoan";
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute([
+                ':trangthai' => $status,
+                ':idthanhtoan' => $paymentId
+            ]);
+            return true;
+        } catch(PDOException $e) {
+            error_log("Error in updatePaymentStatus: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    // User management functions
+    public function getAllUsers() {
+        try {
+            $query = "SELECT * FROM nguoidung ORDER BY ngaytao DESC";
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            error_log("Error in getAllUsers: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    public function addUser($userData) {
+        try {
+            $query = "INSERT INTO nguoidung (tendangnhap, email, matkhau, role, trangthai) 
+                      VALUES (:tendangnhap, :email, :matkhau, :role, :trangthai)";
+            $stmt = $this->conn->prepare($query);
+            $hashedPassword = md5($userData['matkhau']);
+            $stmt->execute([
+                ':tendangnhap' => $userData['tendangnhap'],
+                ':email' => $userData['email'],
+                ':matkhau' => $hashedPassword,
+                ':role' => $userData['role'],
+                ':trangthai' => $userData['trangthai']
+            ]);
+            return $this->conn->lastInsertId();
+        } catch(PDOException $e) {
+            error_log("Error in addUser: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    public function updateUser($userId, $userData) {
+        try {
+            $query = "UPDATE nguoidung SET 
+                        tendangnhap = :tendangnhap,
+                        email = :email,
+                        role = :role,
+                        trangthai = :trangthai
+                      WHERE idnguoidung = :idnguoidung";
+            
+            $params = [
+                ':tendangnhap' => $userData['tendangnhap'],
+                ':email' => $userData['email'],
+                ':role' => $userData['role'],
+                ':trangthai' => $userData['trangthai'],
+                ':idnguoidung' => $userId
+            ];
+            
+            // If password is being updated
+            if (!empty($userData['matkhau'])) {
+                $query = "UPDATE nguoidung SET 
+                            tendangnhap = :tendangnhap,
+                            email = :email,
+                            matkhau = :matkhau,
+                            role = :role,
+                            trangthai = :trangthai
+                          WHERE idnguoidung = :idnguoidung";
+                $params[':matkhau'] = md5($userData['matkhau']);
+            }
+            
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute($params);
+            return true;
+        } catch(PDOException $e) {
+            error_log("Error in updateUser: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    public function deleteUser($userId) {
+        try {
+            $query = "DELETE FROM nguoidung WHERE idnguoidung = :idnguoidung";
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute([':idnguoidung' => $userId]);
+            return true;
+        } catch(PDOException $e) {
+            error_log("Error in deleteUser: " . $e->getMessage());
+            return false;
+        }
+    }
+
     //đăng xuất đăng nhập
 
 
     public function login($email, $matkhau) {
         try {
-            $query = "SELECT * FROM nguoidung WHERE email = :email AND role = 0 LIMIT 1";
+            // Remove the role = 0 filter to allow all users to log in
+            $query = "SELECT * FROM nguoidung WHERE email = :email LIMIT 1";
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':email', $email);
             $stmt->execute();
@@ -700,6 +1828,7 @@ class connect {
                     $_SESSION['user_id'] = $user['idnguoidung'];
                     $_SESSION['email'] = $user['email'];
                     $_SESSION['tendangnhap'] = $user['tendangnhap'];
+                    $_SESSION['role'] = $user['role']; // Make sure to set the role
                     return true;
                 }
             }
