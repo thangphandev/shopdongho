@@ -25,13 +25,15 @@
             <li class="nav-item">
                 <a class="nav-link text-white" href="?page=donhang"><i class="fas fa-shopping-cart"></i> <span>Quản lý đơn hàng</span></a>
             </li>
-       
             <li class="nav-item">
-                <a class="nav-link text-white" href="?page=accounts"><i class="fas fa-users"></i> <span>Quản lý tài khoản</span></a>
+                <a class="nav-link text-white" href="?page=khachhang"><i class="fas fa-users"></i> <span>Quản lý khách hàng</span></a>
+            </li>       
+            <li class="nav-item">
+                <a class="nav-link text-white" href="?page=nhanvien"><i class="fas fa-users"></i> <span>Quản lý nhân viên</span></a>
             </li>
         
         <li class="nav-item">
-            <a class="nav-link text-white" href="logout.php"><i class="fas fa-sign-out-alt"></i> <span>Đăng xuất</span></a>
+            <a class="nav-link text-white" href="../logout.php"><i class="fas fa-sign-out-alt"></i> <span>Đăng xuất</span></a>
         </li>
     </ul>
 </div>

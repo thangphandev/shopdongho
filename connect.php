@@ -1055,51 +1055,82 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
     }
 
     //cập nhật sản phẩm
-    public function updateProduct($id, $data) {
+    public function updateProduct($productId, $productData) {
         try {
+            $this->conn->beginTransaction();
+    
             $query = "UPDATE sanpham SET 
-                      tensanpham = :tensanpham,
-                      mota = :mota,
-                      giaban = :giaban,
-                      gianhap = :gianhap,
-                      soluong = :soluong,
-                      iddanhmuc = :iddanhmuc,
-                      loaiday = :loaiday,
-                      loaimay = :loaimay,
-                      gioitinh = :gioitinh,
-                      trangthai = :trangthai,
-                      idkhuyenmai = :idkhuyenmai";
-            
-            // Only update image if a new one is provided
-            if (!empty($data['path_anh_goc'])) {
+                tensanpham = :tensanpham,
+                mota = :mota,
+                giaban = :giaban,
+                gianhap = :gianhap,
+                soluong = :soluong,
+                iddanhmuc = :iddanhmuc,
+                loaiday = :loaiday,
+                loaimay = :loaimay,
+                gioitinh = :gioitinh,
+                trangthai = :trangthai,
+                idkhuyenmai = :idkhuyenmai,
+                chinhsachbaohanh = :chinhsachbaohanh,
+                bosuutap = :bosuutap,
+                chatlieuvo = :chatlieuvo,
+                matkinh = :matkinh,
+                mausac = :mausac,
+                kichthuoc = :kichthuoc,
+                doday = :doday,
+                chongnuoc = :chongnuoc,
+                tinhnangdacbiet = :tinhnangdacbiet,
+                idnhacungcap = :idnhacungcap";
+    
+            // Add path_anh_goc to update only if it exists in productData
+            if (isset($productData['path_anh_goc'])) {
                 $query .= ", path_anh_goc = :path_anh_goc";
             }
-            
-            $query .= " WHERE idsanpham = :id";
-            
+    
+            $query .= " WHERE idsanpham = :idsanpham";
+    
             $stmt = $this->conn->prepare($query);
-            
-            // Bind parameters
-            $stmt->bindParam(':tensanpham', $data['tensanpham']);
-            $stmt->bindParam(':mota', $data['mota']);
-            $stmt->bindParam(':giaban', $data['giaban']);
-            $stmt->bindParam(':gianhap', $data['gianhap']);
-            $stmt->bindParam(':soluong', $data['soluong']);
-            $stmt->bindParam(':iddanhmuc', $data['iddanhmuc']);
-            $stmt->bindParam(':loaiday', $data['loaiday']);
-            $stmt->bindParam(':loaimay', $data['loaimay']);
-            $stmt->bindParam(':gioitinh', $data['gioitinh']);
-            $stmt->bindParam(':trangthai', $data['trangthai']);
-            $stmt->bindParam(':idkhuyenmai', $data['idkhuyenmai']);
-            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
-            
-            // Only bind image parameter if a new one is provided
-            if (!empty($data['path_anh_goc'])) {
-                $stmt->bindParam(':path_anh_goc', $data['path_anh_goc']);
+    
+            // Bind all parameters
+            $stmt->bindParam(':tensanpham', $productData['tensanpham']);
+            $stmt->bindParam(':mota', $productData['mota']);
+            $stmt->bindParam(':giaban', $productData['giaban']);
+            $stmt->bindParam(':gianhap', $productData['gianhap']);
+            $stmt->bindParam(':soluong', $productData['soluong']);
+            $stmt->bindParam(':iddanhmuc', $productData['iddanhmuc']);
+            $stmt->bindParam(':loaiday', $productData['loaiday']);
+            $stmt->bindParam(':loaimay', $productData['loaimay']);
+            $stmt->bindParam(':gioitinh', $productData['gioitinh']);
+            $stmt->bindParam(':trangthai', $productData['trangthai']);
+            $stmt->bindParam(':idkhuyenmai', $productData['idkhuyenmai']);
+            $stmt->bindParam(':chinhsachbaohanh', $productData['chinhsachbaohanh']);
+            $stmt->bindParam(':bosuutap', $productData['bosuutap']);
+            $stmt->bindParam(':chatlieuvo', $productData['chatlieuvo']);
+            $stmt->bindParam(':matkinh', $productData['matkinh']);
+            $stmt->bindParam(':mausac', $productData['mausac']);
+            $stmt->bindParam(':kichthuoc', $productData['kichthuoc']);
+            $stmt->bindParam(':doday', $productData['doday']);
+            $stmt->bindParam(':chongnuoc', $productData['chongnuoc']);
+            $stmt->bindParam(':tinhnangdacbiet', $productData['tinhnangdacbiet']);
+            $stmt->bindParam(':idnhacungcap', $productData['idnhacungcap']);
+            $stmt->bindParam(':idsanpham', $productId);
+    
+            // Bind path_anh_goc if it exists
+            if (isset($productData['path_anh_goc'])) {
+                $stmt->bindParam(':path_anh_goc', $productData['path_anh_goc']);
             }
+    
+            $result = $stmt->execute();
             
-            return $stmt->execute();
+            if ($result) {
+                $this->conn->commit();
+                return true;
+            } else {
+                $this->conn->rollBack();
+                return false;
+            }
         } catch(PDOException $e) {
+            $this->conn->rollBack();
             error_log("Error updating product: " . $e->getMessage());
             return false;
         }
@@ -1597,7 +1628,7 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
 
     public function getOrderDetailsAdmin($orderId) {
         try {
-            $query = "SELECT cd.*, sp.tensanpham, sp.idsanpham
+            $query = "SELECT cd.*, sp.tensanpham, sp.idsanpham, sp.path_anh_goc
                       FROM chitietdonhang cd 
                       JOIN sanpham sp ON cd.idsanpham = sp.idsanpham 
                       WHERE cd.iddonhang = :id";
@@ -1728,15 +1759,174 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
     }
     
     // User management functions
-    public function getAllUsers() {
+    public function getAllCustomers($search = '') {
         try {
-            $query = "SELECT * FROM nguoidung ORDER BY ngaytao DESC";
+            $query = "SELECT * FROM nguoidung WHERE role = 0";
+            
+            if (!empty($search)) {
+                $query .= " AND (tendangnhap LIKE :search OR email LIKE :search)";
+            }
+            
+            $query .= " ORDER BY ngaytao DESC";
+            
             $stmt = $this->conn->prepare($query);
+            
+            if (!empty($search)) {
+                $stmt->bindValue(':search', "%$search%");
+            }
+            
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch(PDOException $e) {
-            error_log("Error in getAllUsers: " . $e->getMessage());
+            error_log("Error getting customers: " . $e->getMessage());
             return [];
+        }
+    }
+
+    //câp nhat thông tin người dùng
+    public function updateCustomerStatus($id, $status) {
+        try {
+            $query = "UPDATE nguoidung 
+                     SET trangthai = :status 
+                     WHERE idnguoidung = :id AND role = 0";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+            $stmt->bindParam(':status', $status, PDO::PARAM_INT);
+            return $stmt->execute();
+        } catch(PDOException $e) {
+            error_log("Error updating customer status: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    //chi tiêt don hang nguoi dung
+    public function getCustomerDetails($id) {
+        try {
+            // Get customer basic info
+            $query = "SELECT * FROM nguoidung WHERE idnguoidung = :id AND role = 0";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':id', $id);
+            $stmt->execute();
+            $customer = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($customer) {
+                // Get order statistics
+                $query = "SELECT 
+                            COUNT(*) as total_orders,
+                            SUM(CASE WHEN trangthai = 'Hoàn thành' THEN 1 ELSE 0 END) as completed_orders,
+                            SUM(CASE WHEN trangthai = 'Đã hủy' THEN 1 ELSE 0 END) as cancelled_orders,
+                            SUM(CASE WHEN trangthai = 'Hoàn thành' THEN tongtien ELSE 0 END) as total_spent
+                         FROM donhang 
+                         WHERE idnguoidung = :id";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindParam(':id', $id);
+                $stmt->execute();
+                $stats = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                // Get recent orders
+                $query = "SELECT * FROM donhang WHERE idnguoidung = :id ORDER BY ngaydat DESC LIMIT 10";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindParam(':id', $id);
+                $stmt->execute();
+                $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                // Merge all information
+                return array_merge($customer, $stats, ['orders' => $orders]);
+            }
+            
+            return null;
+        } catch(PDOException $e) {
+            error_log("Error getting customer details: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function getAllStaff($search = '') {
+        try {
+            $query = "SELECT * FROM nguoidung WHERE role = 1";
+            if (!empty($search)) {
+                $query .= " AND (tendangnhap LIKE :search OR email LIKE :search)";
+            }
+            $query .= " ORDER BY ngaytao DESC";
+            
+            $stmt = $this->conn->prepare($query);
+            if (!empty($search)) {
+                $searchTerm = "%$search%";
+                $stmt->bindParam(':search', $searchTerm);
+            }
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            error_log("Error getting staff: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    public function addStaff($username, $email, $password) {
+        try {
+            $query = "INSERT INTO nguoidung (tendangnhap, email, matkhau, role, trangthai) 
+                     VALUES (:username, :email, :password, 1, 1)";
+            $stmt = $this->conn->prepare($query);
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+            $stmt->bindParam(':username', $username);
+            $stmt->bindParam(':email', $email);
+            $stmt->bindParam(':password', $hashedPassword);
+            return $stmt->execute();
+        } catch(PDOException $e) {
+            error_log("Error adding staff: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    public function updateStaff($id, $username, $email, $password = null) {
+        try {
+            $query = "UPDATE nguoidung SET tendangnhap = :username, email = :email";
+            if ($password !== null) {
+                $query .= ", matkhau = :password";
+            }
+            $query .= " WHERE idnguoidung = :id AND role = 1";
+            
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':username', $username);
+            $stmt->bindParam(':email', $email);
+            $stmt->bindParam(':id', $id);
+            
+            if ($password !== null) {
+                $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+                $stmt->bindParam(':password', $hashedPassword);
+            }
+            
+            return $stmt->execute();
+        } catch(PDOException $e) {
+            error_log("Error updating staff: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    public function getStaffById($id) {
+        try {
+            $query = "SELECT * FROM nguoidung WHERE idnguoidung = :id AND role = 1";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':id', $id);
+            $stmt->execute();
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            error_log("Error getting staff by ID: " . $e->getMessage());
+            return null;
+        }
+    }
+    
+    public function updateStaffStatus($id, $status) {
+        try {
+            $query = "UPDATE nguoidung SET trangthai = :status 
+                     WHERE idnguoidung = :id AND role = 1";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+            $stmt->bindParam(':status', $status, PDO::PARAM_INT);
+            return $stmt->execute();
+        } catch(PDOException $e) {
+            error_log("Error updating staff status: " . $e->getMessage());
+            return false;
         }
     }
     
@@ -1809,13 +1999,51 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
             return false;
         }
     }
+    public function getAllUsers() {
+        try {
+            $query = "SELECT * FROM nguoidung ORDER BY ngaytao DESC";
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            error_log("Error getting all users: " . $e->getMessage());
+            return [];
+        }
+    }
+    public function updateProductStock($productId, $quantity) {
+        try {
+            $query = "UPDATE sanpham SET soluong = soluong - :quantity 
+                     WHERE idsanpham = :productId AND soluong >= :quantity";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':productId', $productId, PDO::PARAM_INT);
+            $stmt->bindParam(':quantity', $quantity, PDO::PARAM_INT);
+            return $stmt->execute();
+        } catch(PDOException $e) {
+            error_log("Error updating product stock: " . $e->getMessage());
+            return false;
+        }
+    }
+
+
+    public function getUserById($userId) {
+        try {
+            $query = "SELECT * FROM nguoidung WHERE idnguoidung = :id";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':id', $userId, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            error_log("Error getting user: " . $e->getMessage());
+            return null;
+        }
+    }
 
     //đăng xuất đăng nhập
 
 
     public function login($email, $matkhau) {
         try {
-            // Remove the role = 0 filter to allow all users to log in
+            // Check for active user with matching email
             $query = "SELECT * FROM nguoidung WHERE email = :email LIMIT 1";
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':email', $email);
@@ -1823,19 +2051,48 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
             
             if($stmt->rowCount() > 0) {
                 $user = $stmt->fetch(PDO::FETCH_ASSOC);
-                if(md5($matkhau) === $user['matkhau']) { // Compare with MD5 hash
-                    session_start();
+                // Check if account is active
+                if($user['trangthai'] != 1) {
+                    return [
+                        'success' => false,
+                        'message' => 'Tài khoản đã bị khóa'
+                    ];
+                }
+                
+                // Verify password
+                if(md5($matkhau) === $user['matkhau']) {
+                    // Start session if not already started
+                    if (session_status() === PHP_SESSION_NONE) {
+                        session_start();
+                    }
+                    
+                    // Set session variables
                     $_SESSION['user_id'] = $user['idnguoidung'];
                     $_SESSION['email'] = $user['email'];
                     $_SESSION['tendangnhap'] = $user['tendangnhap'];
-                    $_SESSION['role'] = $user['role']; // Make sure to set the role
-                    return true;
+                    $_SESSION['role'] = $user['role'];
+                    
+                    return [
+                        'success' => true,
+                        'message' => 'Đăng nhập thành công',
+                        'role' => $user['role']
+                    ];
                 }
+                return [
+                    'success' => false,
+                    'message' => 'Mật khẩu không chính xác'
+                ];
             }
-            return false;
+            return [
+                'success' => false,
+                'message' => 'Email không tồn tại'
+            ];
         } catch(PDOException $e) {
             error_log("Login error: " . $e->getMessage());
-            return false;
+            return [
+                'success' => false,
+                'message' => 'Đã xảy ra lỗi trong quá trình đăng nhập'
+            ];
         }
     }
     
@@ -1855,8 +2112,8 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
             $hashedPassword = md5($matkhau);
             
             // Thêm người dùng mới
-            $query = "INSERT INTO nguoidung (tendangnhap, email, matkhau, role) 
-                     VALUES (:tendangnhap, :email, :matkhau, 0)";
+            $query = "INSERT INTO nguoidung (tendangnhap, email, matkhau, role, trangthai) 
+                     VALUES (:tendangnhap, :email, :matkhau, 0, 1)";
             $stmt = $this->conn->prepare($query);
             
             $stmt->bindParam(':tendangnhap', $tendangnhap);

@@ -30,6 +30,7 @@ if (isset($_GET['id'])) {
             <thead>
                 <tr>
                     <th>Sản phẩm</th>
+                    <th>Tên</th>
                     <th>Giá</th>
                     <th>Số lượng</th>
                     <th>Thành tiền</th>
@@ -38,15 +39,24 @@ if (isset($_GET['id'])) {
             <tbody>
                 <?php foreach ($orderDetails as $item): ?>
                 <tr>
-                <td>
-                        <a href="admin.php?page=product_form&id=<?php echo $item['idsanpham']; ?>">
+                <td><a href="admin.php?page=product_form&id=<?php echo $item['idsanpham']; ?>">
+                        <img src="../<?php echo $item['path_anh_goc'];?>" 
+                             alt="<?php echo htmlspecialchars($item['tensanpham']);?>" 
+                             class="img-thumbnail"
+                             style="width: 80px; height: 80px; object-fit: cover;">
+                </a>
+                    </td>
+                    <td>
+                    <a href="admin.php?page=product_form&id=<?php echo $item['idsanpham']; ?>">
                             <?php echo htmlspecialchars($item['tensanpham']); ?>
                         </a>
+                        
                     </td>
                     <td><?php echo number_format($item['giaban'], 0, ',', '.'); ?>đ</td>
                     <td><?php echo $item['soluong']; ?></td>
                     <td><?php echo number_format($item['giaban'] * $item['soluong'], 0, ',', '.'); ?>đ</td>
                 </tr>
+                
                 <?php endforeach; ?>
                 <tr>
                     <td colspan="3" class="text-end"><strong>Tổng tiền:</strong></td>

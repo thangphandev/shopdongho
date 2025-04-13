@@ -137,6 +137,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     if ($isEditing) {
+        // Add debug logging
+        error_log("Updating product with ID: " . $productId);
+        error_log("Product Data: " . print_r($productData, true));
+        
         // Update product details
         if ($connect->updateProduct($productId, $productData)) {
             // Add new additional images without deleting existing ones
@@ -147,7 +151,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Location: admin.php?page=products');
             exit;
         } else {
-            $_SESSION['error_message'] = "Không thể cập nhật sản phẩm!";
+            $_SESSION['error_message'] = "Không thể cập nhật sản phẩm. Vui lòng thử lại!";
         }
     } else {
         // Add new product
@@ -223,7 +227,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <div class="mb-3">
                                     <label for="giaban" class="form-label">Giá bán <span class="text-danger">*</span></label>
                                     <div class="input-group">
-                                        <input type="number" class="form-control" id="giaban" name="giaban" value="<?php echo $product['giaban']; ?>" required>
+                                        <input type="text" class="form-control" id="giaban" name="giaban" value="<?php echo $product['giaban']; ?>" required>
                                         <span class="input-group-text">₫</span>
                                     </div>
                                 </div>
@@ -232,7 +236,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <div class="mb-3">
                                     <label for="gianhap" class="form-label">Giá nhập <span class="text-danger">*</span></label>
                                     <div class="input-group">
-                                        <input type="number" class="form-control" id="gianhap" name="gianhap" value="<?php echo $product['gianhap']; ?>" required>
+                                        <input type="text" class="form-control" id="gianhap" name="gianhap" value="<?php echo $product['gianhap']; ?>" required>
                                         <span class="input-group-text">₫</span>
                                     </div>
                                 </div>

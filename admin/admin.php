@@ -61,8 +61,12 @@ $role = $_SESSION['admin_role'];
                     if ($role >= 1) include '../admin/nhacungcap.php';
                     else echo "<div class='alert alert-danger'>Bạn không có quyền truy cập!</div>";
                     break;                    
-                case 'nguoidung':
-                    if ($role == 2) include 'admin/manage_accounts.php';
+                case 'nhanvien':
+                    if ($role == 2) include '../admin/nhanvien.php';
+                    else echo "<div class='alert alert-danger'>Bạn không có quyền truy cập!</div>";
+                    break;
+                case 'khachhang':
+                    if ($role >= 1) include '../admin/khachhang.php';
                     else echo "<div class='alert alert-danger'>Bạn không có quyền truy cập!</div>";
                     break;
                 case 'donhang':

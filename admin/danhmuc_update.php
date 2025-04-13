@@ -45,5 +45,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-header('Location: admin.php?page=categories');
+header('Location: admin.php?page=danhmuc');
 exit;
