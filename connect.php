@@ -241,16 +241,7 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
         }
     }
 
-    public function getWatchTypes() {
-        try {
-            $query = "SELECT * FROM loaimay ";
-            $stmt = $this->conn->prepare($query);
-            $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch(PDOException $e) {
-            return [];
-        }
-    }
+    
 
     public function getStrapTypes() {
         try {
@@ -1549,9 +1540,45 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
     }
     
     
+    public function getWatchTypes() {
+        try {
+            $query = "SELECT * FROM loaimay ";
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            return [];
+        }
+    }
     
+    public function getAllWatchTypesAdmin($search = '') {
+        try {
+            $query = "SELECT * FROM loaimay";
+            $params = [];
     
+            if (!empty($search)) {
+                $query .= " AND ten_loai_may LIKE :search";
+                $params[':search'] = "%$search%";
+            }
     
+            $query .= " ORDER BY id_loai_may ASC";
+            
+            $stmt = $this->conn->prepare($query);
+            
+            // Bind search parameter if it exists
+            if (!empty($params)) {
+                foreach ($params as $key => $value) {
+                    $stmt->bindValue($key, $value);
+                }
+            }
+            
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            error_log("Error getting watch types: " . $e->getMessage());
+            return [];
+        }
+    }
     //lấy tất cả loại máy
     public function getAllWatchTypes($search = '') {
         try {

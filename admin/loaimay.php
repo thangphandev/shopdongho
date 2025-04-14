@@ -5,7 +5,7 @@ if (!isset($_SESSION['admin_id'])) {
 }
 $search = isset($_GET['search']) ? $_GET['search'] : '';
 
-$watchTypes = $connect->getAllWatchTypes($search);
+$watchTypes = $connect->getAllWatchTypesAdmin($search);
 ?>
 
 <div class="container-fluid">

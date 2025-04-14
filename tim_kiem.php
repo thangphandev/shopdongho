@@ -74,7 +74,7 @@ include 'header.php';
                         <h4 class="filter-title">Loại máy</h4>
                         <div class="filter-content scrollable-filter">
                             <?php
-                            $allWatchTypes = $connect->getWatchTypes();
+                            $allWatchTypes = $connect->getAllWatchTypes();
                             foreach ($allWatchTypes as $type):
                             ?>
                             <label class="custom-checkbox d-block mb-2">

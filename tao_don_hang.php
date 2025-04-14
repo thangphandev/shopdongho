@@ -74,6 +74,7 @@ try {
                  ($product['giaban'] - $product['gia_giam']) : 
                  $product['giaban'];
         $products[] = [
+            'tensanpham' => $product['tensanpham'],
             'idsanpham' => $productId,
             'quantity' => $quantity,
             'price' => $price,
@@ -97,6 +98,7 @@ try {
                      ($product['giaban'] - $product['gia_giam']) : 
                      $product['giaban'];
             $products[] = [
+                'tensanpham' => $product['tensanpham'],
                 'idsanpham' => (int)$productId,
                 'quantity' => (int)$quantity,
                 'price' => $price,
