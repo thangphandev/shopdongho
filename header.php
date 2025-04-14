@@ -61,51 +61,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <li class="col_menusp col_tm">
                                         <span>Thương hiệu</span>
                                         <ul>
-                                            <li class=""><a href="https://bossluxurywatch.vn/rolex" title="Rolex"
-                                                    class="smooth lr upper">Rolex</a></li>
-                                            <li class=""><a href="https://bossluxurywatch.vn/hublot" title="Hublot"
-                                                    class="smooth lr upper">Hublot</a></li>
-                                            <li class=""><a href="https://bossluxurywatch.vn/richard-mille" title="Richard Mille"
-                                                    class="smooth lr upper">Richard Mille</a></li>
-                                            <li class=""><a href="https://bossluxurywatch.vn/patek-philippe" title="Patek Philippe"
-                                                    class="smooth lr upper">Patek Philippe</a></li>
-                                            <li class=""><a href="https://bossluxurywatch.vn/corum" title="Corum"
-                                                    class="smooth lr upper">Corum</a></li>
-                                            <li class=""><a href="https://bossluxurywatch.vn/audemars-piguet-3" title="AUDEMARS PIGUET" class="smooth lr upper">AUDEMARS PIGUET</a></li>
-                                            <li class=""><a href="https://bossluxurywatch.vn/jacob-co" title="Jacob&amp;Co"
-                                                    class="smooth lr upper">Jacob&amp;Co</a></li>
-                                            <li class=""><a href="https://bossluxurywatch.vn/chopard" title="Chopard"
-                                                    class="smooth lr upper">Chopard</a></li>
-                                            <li class=""><a href="https://bossluxurywatch.vn/vacheron-constantin"
-                                                    title="Vacheron Constantin" class="smooth lr upper">Vacheron Constantin</a></li>
-                                            <li class=""><a href="https://bossluxurywatch.vn/zenith" title="Zenith"
-                                                    class="smooth lr upper">Zenith</a></li>
-                                            <li class=""><a href="https://bossluxurywatch.vn/piaget" title="Piaget"
-                                                    class="smooth lr upper">Piaget</a></li>
-                                            <li class=""><a href="https://bossluxurywatch.vn/bvl-gari" title="BVLGARI"
-                                                    class="smooth lr upper">BVLGARI</a></li>
-                                            <li class=""><a href="https://bossluxurywatch.vn/chanel" title="Chanel"
-                                                    class="smooth lr upper">Chanel</a></li>
+                                            <?php 
+                                            // Get all brands from database
+                                            $brands = $connect->getAllBrands();
+                                            foreach ($brands as $brand): 
+                                            ?>
+                                            <li class="">
+                                                <a href="tim_kiem.php?brands[]=<?php echo $brand['iddanhmuc']; ?>" 
+                                                   title="<?php echo htmlspecialchars($brand['tendanhmuc']); ?>"
+                                                   class="smooth lr upper">
+                                                   <?php echo htmlspecialchars($brand['tendanhmuc']); ?>
+                                                </a>
+                                            </li>
+                                            <?php endforeach; ?>
                                         </ul>
                                     </li>
                                     <li class="col_menusp col_segment">
                                         <span>Phân khúc</span>
                                         <ul>
-                                            <li class=" mb-2"><a
-                                                    href="https://bossluxurywatch.vn/phan-khuc?price=10000000%20-%20200000000"
-                                                    title="Dưới 200 triệu VNĐ" class="smooth ">Dưới 200 triệu VNĐ</a></li>
-                                            <li class=" mb-2"><a
-                                                    href="https://bossluxurywatch.vn/phan-khuc?price=200000000%20-%20500000000"
-                                                    title="Từ 200 - 500 triệu VNĐ" class="smooth ">Từ 200 - 500 triệu VNĐ</a></li>
-                                            <li class=" mb-2"><a
-                                                    href="https://bossluxurywatch.vn/phan-khuc?price=500000000%20-%201000000000"
-                                                    title="Từ 500 triệu - 1 tỷ VNĐ" class="smooth ">Từ 500 triệu - 1 tỷ VNĐ</a></li>
-                                            <li class=" mb-2"><a
-                                                    href="https://bossluxurywatch.vn/phan-khuc?price=1000000000%20-%202000000000"
-                                                    title="Từ 1 - 2 tỷ VNĐ" class="smooth ">Từ 1 - 2 tỷ VNĐ</a></li>
-                                            <li class=" mb-2"><a
-                                                    href="https://bossluxurywatch.vn/phan-khuc?price=2000000000%20-%205000000000"
-                                                    title="Từ 2 tỷ - 5 tỷ VNĐ" class="smooth ">Từ 2 tỷ - 5 tỷ VNĐ</a></li>
+                                            <li class=" mb-2">
+                                                <a href="tim_kiem.php?min_price=10000000&max_price=200000000" 
+                                                   title="Dưới 200 triệu VNĐ" class="smooth ">
+                                                   Dưới 200 triệu VNĐ
+                                                </a>
+                                            </li>
+                                            <li class=" mb-2">
+                                                <a href="tim_kiem.php?min_price=200000000&max_price=500000000" 
+                                                   title="Từ 200 - 500 triệu VNĐ" class="smooth ">
+                                                   Từ 200 - 500 triệu VNĐ
+                                                </a>
+                                            </li>
+                                            <li class=" mb-2">
+                                                <a href="tim_kiem.php?min_price=500000000&max_price=1000000000" 
+                                                   title="Từ 500 triệu - 1 tỷ VNĐ" class="smooth ">
+                                                   Từ 500 triệu - 1 tỷ VNĐ
+                                                </a>
+                                            </li>
+                                            <li class=" mb-2">
+                                                <a href="tim_kiem.php?min_price=1000000000&max_price=2000000000" 
+                                                   title="Từ 1 - 2 tỷ VNĐ" class="smooth ">
+                                                   Từ 1 - 2 tỷ VNĐ
+                                                </a>
+                                            </li>
+                                            <li class=" mb-2">
+                                                <a href="tim_kiem.php?min_price=2000000000&max_price=5000000000" 
+                                                   title="Từ 2 tỷ - 5 tỷ VNĐ" class="smooth ">
+                                                   Từ 2 tỷ - 5 tỷ VNĐ
+                                                </a>
+                                            </li>
                                         </ul>
                                     </li>
                                 </ul>

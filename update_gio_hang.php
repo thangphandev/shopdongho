@@ -56,7 +56,7 @@ try {
                     'message' => $success ? 'Đã xóa các sản phẩm đã mua' : 'Không thể xóa sản phẩm'
                 ]);
             } else {
-                echo json_encode([
+                echo json_encode([ 
                     'success' => false,
                     'message' => 'Không có sản phẩm để xóa'
                 ]);

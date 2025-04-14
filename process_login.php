@@ -1,5 +1,6 @@
 <?php
 require_once 'connect.php';
+session_start(); // Make sure session is started
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = $_POST['email'] ?? '';
@@ -7,7 +8,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     $connect = new Connect();
     
-    if ($connect->login($email, $matkhau)) {
+    $loginResult = $connect->login($email, $matkhau);
+    
+    if ($loginResult['success']) {
         // Check if user is admin (role > 0)
         if (isset($_SESSION['role']) && ($_SESSION['role'] == 1 || $_SESSION['role'] == 2)) {
             // Admin user - redirect to admin page
@@ -17,14 +20,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['admin_role'] = $_SESSION['role'];
             header('Location: admin/admin.php');
             exit();
-        } else {
+        } else if (isset($_SESSION['role']) && $_SESSION['role'] == 0)  {
             // Regular user - redirect to homepage
             header('Location: index.php');
             exit();
         }
     } else {
-        // Failed login
-        header('Location: login.php?error=1&message=' . urlencode('Email hoặc mật khẩu không đúng'));
+        // Failed login - ensure proper redirection
+        $_SESSION['login_error'] = $loginResult['message'];
+        header('Location: login.php');
         exit();
     }
+} else {
+    // If someone tries to access this page directly without POST data
+    header('Location: login.php');
+    exit();
 }

@@ -31,6 +31,12 @@
             <li class="nav-item">
                 <a class="nav-link text-white" href="?page=nhanvien"><i class="fas fa-users"></i> <span>Quản lý nhân viên</span></a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link text-white" href="?page=danhgia"><i class="fas fa-star"></i> <span>Quản lý đánh giá</span></a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-white" href="?page=tinnhan"><i class="fas fa-comments"></i> <span>Quản lý tin nhắn</span></a>
+            </li>
         
         <li class="nav-item">
             <a class="nav-link text-white" href="../logout.php"><i class="fas fa-sign-out-alt"></i> <span>Đăng xuất</span></a>

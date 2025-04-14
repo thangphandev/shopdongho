@@ -19,6 +19,8 @@ class connect {
                      LEFT JOIN khuyenmai k ON s.idkhuyenmai = k.idkhuyenmai
                      WHERE (k.ngayketthuc IS NULL OR k.ngayketthuc >= CURRENT_TIMESTAMP)
                      AND (k.ngaybatdau IS NULL OR k.ngaybatdau <= CURRENT_TIMESTAMP)
+                     AND s.trangthai = 1
+                     AND s.ngaytao >= DATE_SUB(CURRENT_DATE(), INTERVAL 10 DAY)
                      ORDER BY s.ngaytao DESC
                      LIMIT :limit";
             
@@ -78,7 +80,8 @@ class connect {
                     LEFT JOIN khuyenmai k ON s.idkhuyenmai = k.idkhuyenmai
                     LEFT JOIN hinhanhsanpham h ON s.idsanpham = h.idsanpham
                     LEFT JOIN danhmuc d ON s.iddanhmuc = d.iddanhmuc
-                    WHERE s.iddanhmuc = :categoryId
+                    WHERE s.iddanhmuc = :categoryId 
+                    AND s.trangthai = 1
                     GROUP BY s.idsanpham
                     ORDER BY s.ngaytao DESC";
             $stmt = $this->conn->prepare($query);
@@ -251,7 +254,7 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
 
     public function getStrapTypes() {
         try {
-            $query = "SELECT * FROM loaiday";
+            $query = "SELECT * FROM loaiday where trangthai = 1";
             $stmt = $this->conn->prepare($query);
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -709,6 +712,44 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
         }
     }
 
+    //xóa đơn hàng
+    public function deleteOrder($orderId) {
+        try {
+            $this->conn->beginTransaction();
+    
+            // Check if order is cancelled
+            $checkQuery = "SELECT trangthai FROM donhang WHERE iddonhang = :orderId";
+            $checkStmt = $this->conn->prepare($checkQuery);
+            $checkStmt->bindParam(':orderId', $orderId);
+            $checkStmt->execute();
+            $order = $checkStmt->fetch(PDO::FETCH_ASSOC);
+    
+            if ($order && $order['trangthai'] === 'Đã hủy') {
+                // Delete from chitietdonhang first (child table)
+                $deleteDetailsQuery = "DELETE FROM chitietdonhang WHERE iddonhang = :orderId";
+                $detailsStmt = $this->conn->prepare($deleteDetailsQuery);
+                $detailsStmt->bindParam(':orderId', $orderId);
+                $detailsStmt->execute();
+    
+                // Delete the order (parent table)
+                $deleteOrderQuery = "DELETE FROM donhang WHERE iddonhang = :orderId";
+                $orderStmt = $this->conn->prepare($deleteOrderQuery);
+                $orderStmt->bindParam(':orderId', $orderId);
+                $orderStmt->execute();
+    
+                $this->conn->commit();
+                return true;
+            }
+            
+            $this->conn->rollBack();
+            return false;
+        } catch(PDOException $e) {
+            $this->conn->rollBack();
+            error_log("Error deleting order: " . $e->getMessage());
+            return false;
+        }
+    }
+
     public function removePurchasedItems($userId, $productIds) {
         try {
             // Get the user's cart ID
@@ -825,6 +866,42 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
         }
     }
 
+
+    //tính tổng bán ra
+    public function calculateRevenue($month = null, $year = null) {
+        try {
+            $query = "SELECT SUM(cd.giaban * cd.soluong) as total_revenue
+                      FROM chitietdonhang cd
+                      JOIN donhang d ON cd.iddonhang = d.iddonhang
+                      WHERE d.trangthai = 'Hoàn thành'";
+            
+            // Add date filters if provided
+            if ($month !== null && $year !== null) {
+                $query .= " AND MONTH(d.ngaydat) = :month AND YEAR(d.ngaydat) = :year";
+            } else if ($year !== null) {
+                $query .= " AND YEAR(d.ngaydat) = :year";
+            }
+            
+            $stmt = $this->conn->prepare($query);
+            
+            // Bind parameters if provided
+            if ($month !== null && $year !== null) {
+                $stmt->bindParam(':month', $month, PDO::PARAM_INT);
+                $stmt->bindParam(':year', $year, PDO::PARAM_INT);
+            } else if ($year !== null) {
+                $stmt->bindParam(':year', $year, PDO::PARAM_INT);
+            }
+            
+            $stmt->execute();
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            return $result['total_revenue'] ?? 0;
+        } catch(PDOException $e) {
+            error_log("Error calculating revenue: " . $e->getMessage());
+            return 0;
+        }
+    }
+
     // lấy sản phẩm bán chạy nhất
     public function getTopSellingProducts($limit = 5, $month = null, $year = null) {
         try {
@@ -916,7 +993,135 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
     }
 
     
-    
+    //lấy các bình luận
+        
+        public function getProductReviews($productId) {
+            try {
+                $query = "SELECT d.*, u.tendangnhap
+                          FROM danhgia d
+                          JOIN nguoidung u ON d.idnguoidung = u.idnguoidung
+                          WHERE d.idsanpham = :productId 
+                          AND d.trangthai = 1
+                          ORDER BY d.ngaytao DESC";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindParam(':productId', $productId, PDO::PARAM_INT);
+                $stmt->execute();
+                return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            } catch(PDOException $e) {
+                error_log("Error getting product reviews: " . $e->getMessage());
+                return [];
+            }
+        }
+        
+        // tinh số sao
+        public function getProductAverageRating($productId) {
+            try {
+                $query = "SELECT AVG(sosao) as average_rating, COUNT(*) as review_count 
+                          FROM danhgia 
+                          WHERE idsanpham = :productId 
+                          AND trangthai = 1";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindParam(':productId', $productId, PDO::PARAM_INT);
+                $stmt->execute();
+                return $stmt->fetch(PDO::FETCH_ASSOC);
+            } catch(PDOException $e) {
+                error_log("Error getting average rating: " . $e->getMessage());
+                return ['average_rating' => 0, 'review_count' => 0];
+            }
+        }
+        
+        // kiểm tra bình luận chưa
+        public function hasUserReviewed($userId, $productId) {
+            try {
+                $query = "SELECT COUNT(*) as count 
+                          FROM danhgia 
+                          WHERE idnguoidung = :userId 
+                          AND idsanpham = :productId";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+                $stmt->bindParam(':productId', $productId, PDO::PARAM_INT);
+                $stmt->execute();
+                $result = $stmt->fetch(PDO::FETCH_ASSOC);
+                return $result['count'] > 0;
+            } catch(PDOException $e) {
+                error_log("Error checking if user reviewed: " . $e->getMessage());
+                return false;
+            }
+        }
+        
+        // thêm bình luận
+        public function addProductReview($productId, $userId, $rating, $content) {
+            try {
+                $query = "INSERT INTO danhgia (idsanpham, idnguoidung, sosao, noidung, trangthai) 
+                          VALUES (:productId, :userId, :rating, :content, 1)";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindParam(':productId', $productId, PDO::PARAM_INT);
+                $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+                $stmt->bindParam(':rating', $rating, PDO::PARAM_INT);
+                $stmt->bindParam(':content', $content, PDO::PARAM_STR);
+                return $stmt->execute();
+            } catch(PDOException $e) {
+                error_log("Error adding review: " . $e->getMessage());
+                return false;
+            }
+        }
+
+        public function getAllReviews() {
+            try {
+                $query = "SELECT d.*, s.tensanpham, u.tendangnhap
+                          FROM danhgia d
+                          LEFT JOIN sanpham s ON d.idsanpham = s.idsanpham
+                          LEFT JOIN nguoidung u ON d.idnguoidung = u.idnguoidung
+                          ORDER BY d.ngaytao DESC";
+                $stmt = $this->conn->prepare($query);
+                $stmt->execute();
+                $reviews = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                // Add fallback values for NULL fields
+                foreach ($reviews as &$review) {
+                    if (!isset($review['tensanpham']) || $review['tensanpham'] === null) {
+                        $review['tensanpham'] = 'Sản phẩm đã xóa';
+                    }
+                    if (!isset($review['hoten']) || $review['hoten'] === null) {
+                        $review['hoten'] = 'Người dùng đã xóa';
+                    }
+                }
+                
+                return $reviews;
+            } catch(PDOException $e) {
+                error_log("Error getting all reviews: " . $e->getMessage());
+                return [];
+            }
+        }
+        
+        // Delete a review
+        public function deleteReview($reviewId) {
+            try {
+                $query = "DELETE FROM danhgia WHERE iddanhgia = :reviewId";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindParam(':reviewId', $reviewId, PDO::PARAM_INT);
+                return $stmt->execute();
+            } catch(PDOException $e) {
+                error_log("Error deleting review: " . $e->getMessage());
+                return false;
+            }
+        }
+        
+        // Toggle review status (show/hide)
+        public function toggleReviewStatus($reviewId) {
+            try {
+                $query = "UPDATE danhgia SET trangthai = NOT trangthai WHERE iddanhgia = :reviewId";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindParam(':reviewId', $reviewId, PDO::PARAM_INT);
+                return $stmt->execute();
+            } catch(PDOException $e) {
+                error_log("Error toggling review status: " . $e->getMessage());
+                return false;
+            }
+        }
+
+
+
     public function checkPermission($userId, $requiredRole) {
         try {
             $query = "SELECT role FROM nguoidung WHERE idnguoidung = :userId LIMIT 1";
@@ -1350,7 +1555,7 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
     //lấy tất cả loại máy
     public function getAllWatchTypes($search = '') {
         try {
-            $query = "SELECT * FROM loaimay WHERE 1=1 ";
+            $query = "SELECT * FROM loaimay WHERE trangthai=1";
             $params = [];
     
             if (!empty($search)) {

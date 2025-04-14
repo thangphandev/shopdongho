@@ -106,6 +106,11 @@ $orders = $connect->getAllOrdersAdmin($search, $status);
                                         data-bs-toggle="modal" data-bs-target="#editOrderStatusModal">
                                     <i class="fas fa-edit"></i>
                                 </button>
+                                <button type="button" class="btn btn-sm btn-danger delete-order" 
+                                        data-id="<?php echo $order['iddonhang']; ?>"
+                                        <?php echo ($order['trangthai'] !== 'Đã hủy') ? 'disabled' : ''; ?>>
+                                    <i class="fas fa-trash"></i>
+                                </button>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -116,6 +121,28 @@ $orders = $connect->getAllOrdersAdmin($search, $status);
     </div>
 </div>
 
+<div class="modal fade" id="deleteOrderModal<?php echo $order['iddonhang']; ?>" tabindex="-1" aria-labelledby="deleteOrderModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteOrderModalLabel">Xác nhận xóa đơn hàng</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Bạn có chắc chắn muốn xóa đơn hàng #<?php echo $order['iddonhang']; ?>?</p>
+                <p><strong>Lưu ý:</strong> Chỉ có thể xóa đơn hàng ở trạng thái "Đã hủy".</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <form action="donhang_update.php" method="POST">
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="iddonhang" value="<?php echo $order['iddonhang']; ?>">
+                    <button type="submit" class="btn btn-danger">Xóa</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 <!-- View Order Modal -->
 <div class="modal fade" id="viewOrderModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
@@ -203,4 +230,33 @@ document.querySelectorAll('.edit-order-status').forEach(button => {
         document.getElementById('edit_trangthai').value = status;
     });
 });
+
+document.querySelectorAll('.delete-order').forEach(button => {
+    button.addEventListener('click', function() {
+        const orderId = this.getAttribute('data-id');
+        
+        if (confirm(`Bạn có chắc chắn muốn xóa đơn hàng #${orderId}? Hành động này không thể hoàn tác.`)) {
+            // Create and submit a form programmatically
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = 'donhang_update.php';
+            
+            const actionInput = document.createElement('input');
+            actionInput.type = 'hidden';
+            actionInput.name = 'action';
+            actionInput.value = 'delete';
+            
+            const idInput = document.createElement('input');
+            idInput.type = 'hidden';
+            idInput.name = 'iddonhang';
+            idInput.value = orderId;
+            
+            form.appendChild(actionInput);
+            form.appendChild(idInput);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+});
+
 </script>

@@ -301,8 +301,8 @@ include 'header.php';
                             product_id: productId,
                             action: 'remove'
                         },
-                        success: function(response) {
-                            const data = JSON.parse(response);
+                        dataType: 'json', // Specify that we expect JSON
+                        success: function(data) {
                             if (data.success) {
                                 Swal.fire({
                                     title: "Đã xóa!",
@@ -310,18 +310,34 @@ include 'header.php';
                                     icon: "success"
                                 });
                                 productRow.remove();
-                                updateCheckoutButton();
+                                
+                                // Check if updateCheckoutButton function exists
+                                if (typeof updateCheckoutButton === 'function') {
+                                    updateCheckoutButton();
+                                }
 
                                 // Update cart count in header
                                 $.ajax({
-                                    url: 'get_cart_count.php',
+                                    url: 'lay_so_luong_san_pham.php',
                                     type: 'GET',
-                                    success: function(countResponse) {
-                                        const cartData = JSON.parse(countResponse);
+                                    dataType: 'json',
+                                    cache: false,
+                                    success: function(cartData) {
                                         $('.cart-count').text(cartData.count);
+                                    },
+                                    error: function(xhr, status, error) {
+                                        console.error("Error fetching cart count:", error);
                                     }
                                 });
                             }
+                        },
+                        error: function(xhr, status, error) {
+                            console.error("Error removing item:", error);
+                            Swal.fire({
+                                icon: "error",
+                                title: "Lỗi",
+                                text: "Đã xảy ra lỗi khi xóa sản phẩm"
+                            });
                         }
                     });
                 }

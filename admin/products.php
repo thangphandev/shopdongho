@@ -188,33 +188,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         <div class="btn-group">
                                             <a href="admin.php?page=product_form&id=<?php echo $product['idsanpham']; ?>" class="btn btn-sm btn-info">
                                                 <i class="fas fa-edit"></i>
-                                            </a>
-                                            <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal<?php echo $product['idsanpham']; ?>">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </div>
-                                        
+                                            </a>                                            
+                                        </div>                                       
                                         <!-- Delete Modal -->
-                                        <div class="modal fade" id="deleteModal<?php echo $product['idsanpham']; ?>" tabadmin="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
-                                            <div class="modal-dialog">
-                                                <div class="modal-content">
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title" id="deleteModalLabel">Xác nhận xóa</h5>
-                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                    </div>
-                                                    <div class="modal-body">
-                                                        Bạn có chắc chắn muốn xóa sản phẩm <strong><?php echo $product['tensanpham']; ?></strong>?
-                                                    </div>
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                                                        <form method="POST" action="">
-                                                            <input type="hidden" name="product_id" value="<?php echo $product['idsanpham']; ?>">
-                                                            <button type="submit" name="delete_product" class="btn btn-danger">Xóa</button>
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
+                                        
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

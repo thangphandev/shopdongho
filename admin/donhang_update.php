@@ -19,6 +19,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['error_message'] = "Không thể cập nhật trạng thái đơn hàng!";
             }
             break;
+        case 'delete':
+            $orderId = $_POST['iddonhang'];
+            if ($connect->deleteOrder($orderId)) {
+                $_SESSION['success_message'] = "Đã xóa đơn hàng thành công!";
+            } else {
+                $_SESSION['error_message'] = "Không thể xóa đơn hàng. Vui lòng thử lại!";
+            }
+            break;
     }
 }
 

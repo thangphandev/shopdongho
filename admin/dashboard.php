@@ -25,14 +25,12 @@ $hoanThanhCount = $orderCounts['Hoàn thành'] ?? 0;
 $daHuyCount = $orderCounts['Đã hủy'] ?? 0;
 
 // Calculate revenue and profit
-$revenue = 0;
+$revenue = $connect->calculateRevenue($currentMonth, $currentYear);
 $pendingOrders = $choXacNhanCount + $daXacNhanCount;
 $allOrders = $connect->getAllOrders($currentMonth, $currentYear);
 $totalProfit = $connect->calculateProfit($currentMonth, $currentYear);
 
-foreach ($allOrders as $order) {
-    $revenue += $order['tongtien'];
-}
+
 ?>
 
 <div class="container-fluid">
@@ -139,7 +137,7 @@ foreach ($allOrders as $order) {
             <div class="card stats-card danger">
                 <div class="card-body d-flex justify-content-between align-items-center">
                     <div>
-                        <h4 class="card-title text-muted mb-0">Tổng doanh thu</h4>
+                        <h4 class="card-title text-muted mb-0">Tổng tiền bán ra</h4>
                         <h2 class="mt-2 mb-0"><?php echo number_format($revenue, 0, ',', '.'); ?> ₫</h2>
                     </div>
                     <div class="icon text-danger">
