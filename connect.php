@@ -1579,6 +1579,40 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
             return [];
         }
     }
+
+
+    public function saveChat($userId, $message, $role, $time) {
+        try {
+            $query = "INSERT INTO chatbox (idnguoidung, noidungchat, role, thoigian) 
+                     VALUES (:idnguoidung, :noidungchat, :role, :thoigian)";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':idnguoidung', $userId, PDO::PARAM_INT);
+            $stmt->bindParam(':noidungchat', $message, PDO::PARAM_STR);
+            $stmt->bindParam(':role', $role, PDO::PARAM_INT);
+            $stmt->bindParam(':thoigian', $time);
+            return $stmt->execute();
+        } catch(PDOException $e) {
+            error_log("Error saving chat: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    public function getChatHistory($userId) {
+        try {
+            $query = "SELECT * FROM chatbox 
+                     WHERE idnguoidung = :idnguoidung 
+                     ORDER BY thoigian ASC";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':idnguoidung', $userId, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            error_log("Error getting chat history: " . $e->getMessage());
+            return [];
+        }
+    }
+
+
     //lấy tất cả loại máy
     public function getAllWatchTypes($search = '') {
         try {

@@ -6,15 +6,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $connect = new Connect();
 
-    // if ($connect->login($email, $matkhau)) {
-    //     // Successful login
-    //     header('Location: index.php');
-    //     exit();
-    // } else {
-    //     // Failed login
-    //     header('Location: login.php?error=1&message=' . urlencode('Email hoặc mật khẩu không đúng'));
-    //     exit();
-    // }
+    
 }
 ?>
 <!DOCTYPE html>
@@ -125,12 +117,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <a href="san-pham" title="Thương hiệu" class="smooth">TƯ VẤN</a>
                                 <!-- Menu động có thể thêm từ PHP -->
                             </li>
-                            <li class="menusp">
-                                <a href="san-pham" title="Thương hiệu" class="smooth">LIÊN HỆ</a>
-                                <!-- Menu động có thể thêm từ PHP -->
-                            </li>
+                            
                             <li class="menusp">
                                 <a href="san-pham" title="Thương hiệu" class="smooth">GIỚI THIỆU</a> <!-- Menu động có thể thêm từ PHP -->
+                            </li>
+                            <li class="menusp">
+                                <a href="chat.php" title="Nhắn tin với shop" class="smooth">NHẮN TIN</a>
                             </li>
                             <!-- Rest of your menu items -->
                             <button type="button" class="d_btn clnau d_seach_btn toggle_seach cspoint ml-2">
