@@ -89,7 +89,7 @@ class connect {
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch(PDOException $e) {
-            echo "Error: " . $e->getMessage();
+            echo "Error: " . $e->getMessage(); 
             return false;
         }
     }
@@ -99,8 +99,9 @@ class connect {
         $query = "SELECT s.*, h.duongdan as image_path, d.tendanhmuc,
                     k.gia_giam, k.ngaybatdau, k.ngayketthuc ,loaiday.ten_loai_day, loaiday.mo_ta_loai_day,
                     loaimay.mo_ta_loai_may,
-                    loaimay.ten_loai_may
+                    loaimay.ten_loai_may, chinhsachbaohanh.*
                 FROM sanpham s 
+                JOIN chinhsachbaohanh ON s.chinhsachbaohanh = chinhsachbaohanh.id_chinh_sach
                 LEFT JOIN hinhanhsanpham h ON s.idsanpham = h.idsanpham 
                 LEFT JOIN danhmuc d ON s.iddanhmuc = d.iddanhmuc
                 LEFT JOIN loaiday  ON s.loaiday = loaiday.id_loai_day
@@ -313,16 +314,42 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
         }
     }
 
+    // public function getOrderDetails($orderId) {
+    //     try {
+    //         $query = "SELECT cd.*, s.tensanpham, s.idsanpham, s.path_anh_goc,
+    //                     s.bosuutap, s.loaimay, s.chatlieuvo, s.loaiday, s.matkinh,
+    //                     s.mausac, s.kichthuoc, s.doday, s.chongnuoc,
+    //                     cd.giaban, cd.soluong,
+    //                     d.ngaydat, d.trangthai, d.tennguoidat, d.diachigiao, d.sdt, lm.ten_loai_may,
+    //                     ct.phuongthuctt, ct.trangthai as trangthai_thanhtoan
+    //                 FROM chitietdonhang cd
+    //                 JOIN loaimay lm ON s.loaimay = lm.id_loai_may
+    //                 JOIN sanpham s ON cd.idsanpham = s.idsanpham
+    //                 JOIN donhang d ON cd.iddonhang = d.iddonhang
+    //                 LEFT JOIN chitietthanhtoan ct ON d.idthanhtoan = ct.idthanhtoan
+    //                 WHERE cd.iddonhang = :orderId";
+            
+    //         $stmt = $this->conn->prepare($query);
+    //         $stmt->bindParam(':orderId', $orderId);
+    //         $stmt->execute();
+    //         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    //     } catch(PDOException $e) {
+    //         error_log("Error getting order details: " . $e->getMessage());
+    //         return [];
+    //     }
+    // }
     public function getOrderDetails($orderId) {
         try {
             $query = "SELECT cd.*, s.tensanpham, s.idsanpham, s.path_anh_goc,
                         s.bosuutap, s.loaimay, s.chatlieuvo, s.loaiday, s.matkinh,
                         s.mausac, s.kichthuoc, s.doday, s.chongnuoc,
                         cd.giaban, cd.soluong,
-                        d.ngaydat, d.trangthai, d.tennguoidat, d.diachigiao, d.sdt,
+                        d.ngaydat, d.trangthai, d.tennguoidat, d.diachigiao, d.sdt, 
+                        lm.ten_loai_may,
                         ct.phuongthuctt, ct.trangthai as trangthai_thanhtoan
                     FROM chitietdonhang cd
                     JOIN sanpham s ON cd.idsanpham = s.idsanpham
+                    LEFT JOIN loaimay lm ON s.loaimay = lm.id_loai_may
                     JOIN donhang d ON cd.iddonhang = d.iddonhang
                     LEFT JOIN chitietthanhtoan ct ON d.idthanhtoan = ct.idthanhtoan
                     WHERE cd.iddonhang = :orderId";

@@ -134,7 +134,7 @@ include 'header.php';
                                                     <small class="text-warning">Mã SP: <?= htmlspecialchars($item['idsanpham']) ?></small>
                                                     <div class="product-specs">
                                                         <small class="text-light">
-                                                            <?= !empty($item['loaimay']) ? "Loại máy: " . htmlspecialchars($item['loaimay']) . "<br>" : "" ?>
+                                                            <?= !empty($item['loaimay']) ? "Loại máy: " . htmlspecialchars($item['ten_loai_may']) . "<br>" : "" ?>
                                                             <?= !empty($item['mausac']) ? "Màu: " . htmlspecialchars($item['mausac']) . "<br>" : "" ?>
                                                             <?= !empty($item['kichthuoc']) ? "Kích thước: " . htmlspecialchars($item['kichthuoc']) : "" ?>
                                                         </small>

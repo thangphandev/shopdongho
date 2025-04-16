@@ -21,9 +21,9 @@ $chatHistory = $connect->getChatHistory($userId);
 include 'header.php';
 ?>
 
-<div class="container mt-5 mb-5">
+<div class="container chat-page-container mt-5 mb-5">
     <div class="row">
-        <div class="col-md-8 mx-auto">
+        <div class="col-md-10 mx-auto">
             <div class="chat-container">
                 <div class="chat-header">
                     <h2>Chat với Shop</h2>
@@ -31,6 +31,8 @@ include 'header.php';
                 </div>
                 
                 <div class="chat-body">
+                    <!-- Rest of the chat body remains the same -->
+                    <!-- ... existing code ... -->
                     <div class="chat-messages" id="chatMessages">
                         <?php if (empty($chatHistory)): ?>
                             <div class="message shop-message">
@@ -66,12 +68,25 @@ include 'header.php';
 </div>
 
 <style>
+
+.chat-page-container {
+    padding-top: 120px; /* Tăng giá trị này để đẩy container xuống dưới header */
+    position: relative;
+    z-index: 1;
+    margin-top: 30px; /* Thêm margin-top để tạo khoảng cách với header */
+    max-width: 1000px;
+}
+
 .chat-container {
     background-color: #fff;
     border-radius: 8px;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
     overflow: hidden;
     margin-bottom: 50px;
+    font-size: 16px;
+    position: relative;
+    z-index: 10; /* Higher than header */
+    width: 100%;
 }
 
 .chat-header {
@@ -348,3 +363,4 @@ $(document).ready(function() {
 </script>
 
 <?php include 'footer.php'; ?>
+

@@ -241,7 +241,7 @@ $totalProfit = $connect->calculateProfit($currentMonth, $currentYear);
                     </div>
                 </div>
                 <div class="card-footer bg-white">
-                    <a href="admin.php?page=orders" class="btn btn-sm btn-primary">Xem tất cả đơn hàng</a>
+                    <a href="admin.php?page=donhang" class="btn btn-sm btn-primary">Xem tất cả đơn hàng</a>
                 </div>
             </div>
         </div>
@@ -441,21 +441,21 @@ $totalProfit = $connect->calculateProfit($currentMonth, $currentYear);
                             </a>
                         </div>
                         <div class="col-md-3 mb-3">
-                            <a href="admin.php?page=categories" class="btn btn-outline-success btn-lg w-100">
+                            <a href="admin.php?page=danhmuc" class="btn btn-outline-success btn-lg w-100">
                                 <i class="fas fa-list mb-2"></i><br>
                                 Quản lý danh mục
                             </a>
                         </div>
                         <div class="col-md-3 mb-3">
-                            <a href="admin.php?page=orders" class="btn btn-outline-warning btn-lg w-100">
+                            <a href="admin.php?page=donhang" class="btn btn-outline-warning btn-lg w-100">
                                 <i class="fas fa-shopping-cart mb-2"></i><br>
                                 Quản lý đơn hàng
                             </a>
                         </div>
                         <div class="col-md-3 mb-3">
-                            <a href="admin.php?page=users" class="btn btn-outline-info btn-lg w-100">
+                            <a href="admin.php?page=khachhang" class="btn btn-outline-info btn-lg w-100">
                                 <i class="fas fa-users mb-2"></i><br>
-                                Quản lý người dùng
+                                Quản lý khách hàng
                             </a>
                         </div>
                     </div>

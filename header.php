@@ -16,11 +16,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="robots" content="index,follow">
-    <title>Watch</title>
+    <title>Watch Luxury</title>
     <meta property="og:site_name" content="Watch">
     <meta property="og:type" content="article">
     <meta property="og:locale" content="vi_vn">
-    <link rel="shortcut icon" href="images/3_2.png">
+    <link rel="shortcut icon" href="images/2222.png">
     <link rel="stylesheet" href="css/bootstrap.min.css">
     <link rel="stylesheet" href="css/toastr.min.css">
     <link rel="stylesheet" href="css/jquery.fancybox.min.css">

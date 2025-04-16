@@ -146,16 +146,16 @@ include 'header.php';
                         <p><span style="font-size: 12pt;">Bộ sưu tập: <?php echo htmlspecialchars($product['bosuutap']); ?></span></p>
                         <p><span style="font-size: 12pt;">Xuất xứ: <?php echo htmlspecialchars($product['xuatxu'] ?? 'Thụy Sỹ'); ?></span></p>
                         <p><span style="font-size: 12pt;">Dòng: <?php echo htmlspecialchars($product['tendanhmuc']); ?></span></p>
-                        <p><span style="font-size: 12pt;">Loại máy: <?php echo htmlspecialchars($product['ten_loai_may']) . ' -- Chi tiết: ' . htmlspecialchars($product['mo_ta_loai_may']); ?></span></p>
+                        <p><span style="font-size: 12pt;">Loại máy: <?php echo htmlspecialchars($product['ten_loai_may']) . '' . htmlspecialchars($product['mo_ta_loai_may']); ?></span></p>
                         <p><span style="font-size: 12pt;">Kích thước: <?php echo htmlspecialchars($product['kichthuoc']); ?> mm</span></p>
                         <p><span style="font-size: 12pt;">Độ dày: <?php echo htmlspecialchars($product['doday']); ?> mm</span></p>
                         <p><span style="font-size: 12pt;">Mặt kính: <?php echo htmlspecialchars($product['matkinh']); ?></span></p>
                         <p><span style="font-size: 12pt;">Chất liệu vỏ: <?php echo htmlspecialchars($product['chatlieuvo']); ?></span></p>
-                        <p><span style="font-size: 12pt;">Dây đeo: <?php echo htmlspecialchars($product['ten_loai_day']). ' -- Chi tiết: ' . htmlspecialchars($product['mo_ta_loai_day']); ?></span></p>
+                        <p><span style="font-size: 12pt;">Dây đeo: <?php echo htmlspecialchars($product['ten_loai_day']). '' . htmlspecialchars($product['mo_ta_loai_day']); ?></span></p>
                         <p><span style="font-size: 12pt;">Màu sắc: <?php echo htmlspecialchars($product['mausac']); ?></span></p>
                         <p><span style="font-size: 12pt;">Chống nước: <?php echo htmlspecialchars($product['chongnuoc']); ?> ATM</span></p>
                         <p><span style="font-size: 12pt;">Tính năng đặc biệt: <?php echo htmlspecialchars($product['tinhnangdacbiet']); ?></span></p>
-                        <p><span style="font-size: 12pt;">Chính sách bảo hành: <?php echo htmlspecialchars($product['chinhsachbaohanh']); ?></span></p>
+                        <p><span style="font-size: 12pt;">Chính sách bảo hành: <?php echo htmlspecialchars($product['noi_dung_chinh_sach']); ?></span></p>
                     </div>
                 </div>
             </div>
@@ -221,7 +221,7 @@ include 'header.php';
                                         <div class="rating-input">
                                             <?php for ($i = 5; $i >= 1; $i--): ?>
                                                 <input type="radio" id="star<?php echo $i; ?>" name="rating" value="<?php echo $i; ?>" required>
-                                                <label for="star<?php echo $i; ?>"><i class="fas fa-gift"></i></label>
+                                                <label for="star<?php echo $i; ?>"><i class="fas fa-star"></i></label>
                                             <?php endfor; ?>
                                         </div>
                                     </div>
@@ -272,9 +272,9 @@ include 'header.php';
                                     <div class="star-rating">
                                         <?php for ($i = 1; $i <= 5; $i++): ?>
                                             <?php if ($i <= $review['sosao']): ?>
-                                                <i class="fas fa-gift text-warning"></i>
+                                                <i class="fas fa-star text-warning"></i>
                                             <?php else: ?>
-                                                <i class="far fa-gift text-warning"></i>
+                                                <i class="far fa-star text-warning"></i>
                                             <?php endif; ?>
                                         <?php endfor; ?>
                                     </div>
@@ -309,9 +309,9 @@ include 'header.php';
                                             <div class="star-rating">
                                                 <?php for ($i = 1; $i <= 5; $i++): ?>
                                                     <?php if ($i <= $review['sosao']): ?>
-                                                        <i class="fas fa-gift text-warning"></i>
+                                                        <i class="fas fa-star text-warning"></i>
                                                     <?php else: ?>
-                                                        <i class="far fa-gift text-warning"></i>
+                                                        <i class="far fa-star text-warning"></i>
                                                     <?php endif; ?>
                                                 <?php endfor; ?>
                                             </div>
@@ -497,15 +497,15 @@ include 'header.php';
         font-size: 24px; /* Increased from 18px */
     }
     
-    .star-rating .fas.fa-gift {
+    .star-rating .fas.fa-star {
         color: #ffc107;
     }
     
-    .star-rating .far.fa-gift {
+    .star-rating .far.fa-star {
         color: #ddd;
     }
     
-    .star-rating .fas.fa-gift-card {
+    .star-rating .fas.fa-star-card {
         color: #ffc107;
     }
     

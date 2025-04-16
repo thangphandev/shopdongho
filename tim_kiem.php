@@ -196,8 +196,8 @@ include 'header.php';
                                        class="smooth c-img marb-24">
                                         <img class="contain lazy"
                                              loading="lazy"
-                                             data-src="<?= htmlspecialchars($product['image_path'] ?? 'images/no-image.jpg') ?>"
-                                             src="<?= htmlspecialchars($product['image_path'] ?? 'images/no-image.jpg') ?>"
+                                             data-src="<?= htmlspecialchars($product['path_anh_goc'] ?? 'images/no-image.jpg') ?>"
+                                             src="<?= htmlspecialchars($product['path_anh_goc'] ?? 'images/no-image.jpg') ?>"
                                              alt="<?= htmlspecialchars($product['tensanpham']) ?>"
                                              title="<?= htmlspecialchars($product['tensanpham']) ?>">
                                         <?php 

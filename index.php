@@ -222,19 +222,7 @@ include 'header.php';
                 <div class="row">
                     <div class="col-lg-4 col-12">
                         <div class="news_cas single-item tiny-slider" id="pro-img" data-axis="horizontal" data-controls="true" data-nav_position="bottom" data-nav_as_thumbnails="false" data-slide_by="page" data-lazyload="true" data-items="1" data-mouse_drag="true" data-autoplay="true" data-autoplay_button_output="false" data-speed="400" data-nav="true">
-                            <?php foreach ($news as $article): ?>
-                                <div class="item_news_events">
-                                    <a href="<?php echo htmlspecialchars($article['url']); ?>" class="c-img" title="<?php echo htmlspecialchars($article['title']); ?>" rel="nofollow,noindex,noopener">
-                                        <img class="lazy tns-lazy-img" loading="lazy" data-src="<?php echo htmlspecialchars($article['image']); ?>" alt="<?php echo htmlspecialchars($article['title']); ?>" title="<?php echo htmlspecialchars($article['title']); ?>">
-                                    </a>
-                                    <div class="text">
-                                        <a href="<?php echo htmlspecialchars($article['url']); ?>" class="title smooth" rel="nofollow,noindex,noopener"><?php echo htmlspecialchars($article['title']); ?></a>
-                                        <p class="time_date"><i class="fa fa-clock-o" aria-hidden="true"></i><?php echo htmlspecialchars($article['date']); ?></p>
-                                        <p class="view"><i class="fa fa-eye" aria-hidden="true"></i><?php echo htmlspecialchars($article['views']); ?></p>
-                                        <div class="short_content"><?php echo htmlspecialchars($article['short_content']); ?></div>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
+                            
                         </div>
                     </div>
                 </div>
@@ -403,6 +391,7 @@ include 'header.php';
         height: 2px;
         background-color: #c8a96a;
     }
+}
 </style>
 
 </html>
