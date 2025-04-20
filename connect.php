@@ -651,20 +651,21 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
         }
     }
 
+
     public function createOrder($userId, $orderData, $products, $paymentMethod) {
         try {
             $this->conn->beginTransaction();
     
-            // 1. Create payment record first
-            $paymentSql = "INSERT INTO chitietthanhtoan (phuongthuctt, tongtien, trangthai, magiaodich, ngaynhanhang) 
-                          VALUES (:phuongthuctt, :tongtien, :trangthai, :magiaodich, :ngaynhanhang)";
+            // 1. Create payment record
+            $paymentSql = "INSERT INTO chitietthanhtoan (phuongthuctt, tongtien, trangthai, magiaodich ) 
+                          VALUES (:phuongthuctt, :tongtien, :trangthai, :magiaodich)";
             $stmt = $this->conn->prepare($paymentSql);
             $stmt->execute([
                 ':phuongthuctt' => $paymentMethod,
                 ':tongtien' => $orderData['total_amount'],
-                ':trangthai' => 'Chưa thanh toán',
-                ':magiaodich' => $paymentMethod === 'cod' ? NULL : '',
-                ':ngaynhanhang' => NULL
+                ':trangthai' => $paymentMethod === 'paypal' ? 'Đã thanh toán' : 'Chưa thanh toán',
+                ':magiaodich' => $paymentMethod === 'paypal' ? ($orderData['payment_details'] ?? '') : '',
+                
             ]);
             $idthanhtoan = $this->conn->lastInsertId();
     
@@ -682,18 +683,18 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
                 ':address' => $orderData['full_address'],
                 ':total' => $orderData['total_amount'],
                 ':payment' => $paymentMethod,
-                ':trangthai' => 'Chờ xác nhận',
+                ':trangthai' => $orderData['status'],
                 ':idthanhtoan' => $idthanhtoan
             ]);
             
             $orderId = $this->conn->lastInsertId();
     
             // 3. Create order details
+            $detailSql = "INSERT INTO chitietdonhang (iddonhang, idsanpham, soluong, giaban) 
+                          VALUES (:orderId, :productId, :quantity, :price)";
+            $stmt = $this->conn->prepare($detailSql);
+            
             foreach ($products as $product) {
-                $detailSql = "INSERT INTO chitietdonhang (iddonhang, idsanpham, soluong, giaban) 
-                             VALUES (:orderId, :productId, :quantity, :price)";
-                
-                $stmt = $this->conn->prepare($detailSql);
                 $stmt->execute([
                     ':orderId' => $orderId,
                     ':productId' => $product['idsanpham'],
@@ -702,33 +703,101 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
                 ]);
             }
     
-            // 4. Remove items from cart if order is from cart
-            if ($orderData['type'] === 'cart') {
-                $cartStmt = $this->conn->prepare("SELECT idgiohang FROM giohang WHERE idnguoidung = ?");
-                $cartStmt->execute([$userId]);
-                $cartId = $cartStmt->fetchColumn();
-    
-                if ($cartId) {
-                    foreach ($products as $product) {
-                        $deleteStmt = $this->conn->prepare(
-                            "DELETE FROM chitietgiohang WHERE idgiohang = ? AND idsanpham = ?"
-                        );
-                        $deleteStmt->execute([$cartId, $product['idsanpham']]);
-                    }
-                    $this->updateCartTotal($cartId);
-                }
-            }
-    
             $this->conn->commit();
-            return ['success' => true, 'orderId' => $orderId];
+            return [
+                'success' => true, 
+                'order_id' => $orderId,
+                'payment_id' => $idthanhtoan
+            ];
     
         } catch (Exception $e) {
             $this->conn->rollBack();
-            error_log("Order creation error: " . $e->getMessage());
-            error_log("Stack trace: " . $e->getTraceAsString());
-            return ['success' => false, 'message' => 'Không thể tạo đơn hàng: ' . $e->getMessage()];
+            error_log("Create order error: " . $e->getMessage());
+            return [
+                'success' => false, 
+                'message' => 'Error creating order: ' . $e->getMessage()
+            ];
         }
     }
+
+    // public function createOrder($userId, $orderData, $products, $paymentMethod) {
+    //     try {
+    //         $this->conn->beginTransaction();
+    
+    //         // 1. Create payment record first
+    //         $paymentSql = "INSERT INTO chitietthanhtoan (phuongthuctt, tongtien, trangthai, magiaodich ) 
+    //                       VALUES (:phuongthuctt, :tongtien, :trangthai, :magiaodich)";
+    //         $stmt = $this->conn->prepare($paymentSql);
+    //         $stmt->execute([
+    //             ':phuongthuctt' => $paymentMethod,
+    //             ':tongtien' => $orderData['total_amount'],
+    //             ':trangthai' => 'Chưa thanh toán',
+    //             ':magiaodich' => $paymentMethod === 'cod' ? NULL : '',
+    //             
+    //         ]);
+    //         $idthanhtoan = $this->conn->lastInsertId();
+    
+    //         // 2. Create order
+    //         $orderSql = "INSERT INTO donhang (idnguoidung, tennguoidat, sdt, diachigiao, tongtien, 
+    //                                         phuongthuctt, trangthai, idthanhtoan) 
+    //                     VALUES (:userId, :fullname, :phone, :address, :total, 
+    //                             :payment, :trangthai, :idthanhtoan)";
+            
+    //         $stmt = $this->conn->prepare($orderSql);
+    //         $stmt->execute([
+    //             ':userId' => $userId,
+    //             ':fullname' => $orderData['fullname'],
+    //             ':phone' => $orderData['phone'],
+    //             ':address' => $orderData['full_address'],
+    //             ':total' => $orderData['total_amount'],
+    //             ':payment' => $paymentMethod,
+    //             ':trangthai' => 'Chờ xác nhận',
+    //             ':idthanhtoan' => $idthanhtoan
+    //         ]);
+            
+    //         $orderId = $this->conn->lastInsertId();
+    
+    //         // 3. Create order details
+    //         foreach ($products as $product) {
+    //             $detailSql = "INSERT INTO chitietdonhang (iddonhang, idsanpham, soluong, giaban) 
+    //                          VALUES (:orderId, :productId, :quantity, :price)";
+                
+    //             $stmt = $this->conn->prepare($detailSql);
+    //             $stmt->execute([
+    //                 ':orderId' => $orderId,
+    //                 ':productId' => $product['idsanpham'],
+    //                 ':quantity' => $product['quantity'],
+    //                 ':price' => $product['price']
+    //             ]);
+    //         }
+    
+    //         // 4. Remove items from cart if order is from cart
+    //         if ($orderData['type'] === 'cart') {
+    //             $cartStmt = $this->conn->prepare("SELECT idgiohang FROM giohang WHERE idnguoidung = ?");
+    //             $cartStmt->execute([$userId]);
+    //             $cartId = $cartStmt->fetchColumn();
+    
+    //             if ($cartId) {
+    //                 foreach ($products as $product) {
+    //                     $deleteStmt = $this->conn->prepare(
+    //                         "DELETE FROM chitietgiohang WHERE idgiohang = ? AND idsanpham = ?"
+    //                     );
+    //                     $deleteStmt->execute([$cartId, $product['idsanpham']]);
+    //                 }
+    //                 $this->updateCartTotal($cartId);
+    //             }
+    //         }
+    
+    //         $this->conn->commit();
+    //         return ['success' => true, 'orderId' => $orderId];
+    
+    //     } catch (Exception $e) {
+    //         $this->conn->rollBack();
+    //         error_log("Order creation error: " . $e->getMessage());
+    //         error_log("Stack trace: " . $e->getTraceAsString());
+    //         return ['success' => false, 'message' => 'Không thể tạo đơn hàng: ' . $e->getMessage()];
+    //     }
+    // }
 
     //xóa đơn hàng
     public function deleteOrder($orderId) {
@@ -1607,6 +1676,91 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
         }
     }
 
+    public function getRevenueAndProfit($month, $year) {
+        try {
+            $query = "SELECT 
+                        COALESCE(SUM(cd.giaban * cd.soluong), 0) as doanh_thu,
+                        COALESCE(SUM((cd.giaban - sp.gianhap) * cd.soluong), 0) as loi_nhuan
+                    FROM donhang d
+                    JOIN chitietdonhang cd ON d.iddonhang = cd.iddonhang
+                    JOIN sanpham sp ON cd.idsanpham = sp.idsanpham
+                    WHERE MONTH(d.ngaytao) = :month 
+                    AND YEAR(d.ngaytao) = :year
+                    AND d.trangthai = 'Hoàn thành'";
+            
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindValue(':month', $month, PDO::PARAM_INT);
+            $stmt->bindValue(':year', $year, PDO::PARAM_INT);
+            
+            if (!$stmt->execute()) {
+                throw new Exception("Query execution failed");
+            }
+            
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result ?: [
+                'doanh_thu' => 0,
+                'loi_nhuan' => 0
+            ];
+        } catch(Exception $e) {
+            error_log("Error in getRevenueAndProfit: " . $e->getMessage());
+            return [
+                'doanh_thu' => 0,
+                'loi_nhuan' => 0
+            ];
+        }
+    }
+    
+    public function getTopSellingProductsthongke($year, $limit = 5) {
+        try {
+            $query = "SELECT 
+                        sp.tensanpham,
+                        SUM(cd.soluong) as total_quantity,
+                        SUM(cd.giaban * cd.soluong) as total_revenue
+                    FROM chitietdonhang cd
+                    JOIN sanpham sp ON cd.idsanpham = sp.idsanpham
+                    JOIN donhang d ON cd.iddonhang = d.iddonhang
+                    WHERE YEAR(d.ngaydat) = :year
+                    AND d.trangthai = 'Hoàn thành'
+                    GROUP BY sp.idsanpham, sp.tensanpham
+                    ORDER BY total_quantity DESC
+                    LIMIT :limit";
+            
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindValue(':year', $year, PDO::PARAM_INT);
+            $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            error_log("Error in getTopSellingProducts: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    public function getCategoryStats($year) {
+        try {
+            $query = "SELECT 
+                        dm.tendanhmuc,
+                        COUNT(DISTINCT d.iddonhang) as so_don_hang,
+                        SUM(cd.soluong) as so_san_pham,
+                        SUM(cd.giaban * cd.soluong) as doanh_thu
+                    FROM chitietdonhang cd
+                    JOIN sanpham sp ON cd.idsanpham = sp.idsanpham
+                    JOIN danhmuc dm ON sp.iddanhmuc = dm.iddanhmuc
+                    JOIN donhang d ON cd.iddonhang = d.iddonhang
+                    WHERE YEAR(d.ngaydat) = :year
+                    AND d.trangthai = 'Hoàn thành'
+                    GROUP BY dm.iddanhmuc, dm.tendanhmuc
+                    ORDER BY doanh_thu DESC";
+            
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindValue(':year', $year, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            error_log("Error in getCategoryStats: " . $e->getMessage());
+            return [];
+        }
+    }
 
     public function saveChat($userId, $message, $role, $time) {
         try {
@@ -1639,6 +1793,29 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
         }
     }
 
+    public function getChatUsers() {
+        try {
+            $query = "SELECT DISTINCT n.*, 
+                        (SELECT thoigian 
+                         FROM chatbox 
+                         WHERE idnguoidung = n.idnguoidung 
+                         ORDER BY thoigian DESC 
+                         LIMIT 1) as last_message
+                     FROM nguoidung n
+                     INNER JOIN chatbox c ON n.idnguoidung = c.idnguoidung
+                     WHERE n.trangthai = 1
+                     ORDER BY last_message DESC";
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            error_log("Error getting chat users: " . $e->getMessage());
+            return [];
+        }
+    }
+
+ 
+    
 
     //lấy tất cả loại máy
     public function getAllWatchTypes($search = '') {

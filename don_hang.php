@@ -525,7 +525,7 @@ function getStatusClass($status) {
     switch ($status) {
         case 'Chờ xác nhận': return 'badge-pending';
         case 'Đã xác nhận': return 'badge-confirmed';
-        case 'Đang chuẩn bị đơn hàng': return 'badge-preparing';
+        case 'Chuẩn bị đơn': return 'badge-preparing';
         case 'Đang vận chuyển': return 'badge-shipping';
         case 'Hoàn thành': return 'badge-completed';
         case 'Đã hủy': return 'badge-cancelled';
@@ -536,7 +536,7 @@ function getOrderProgress($status) {
     $stages = [
         'Chờ xác nhận' => 20,
         'Đã xác nhận' => 40,
-        'Chuẩn bị đơn hàng' => 60,
+        'Chuẩn bị đơn' => 60,
         'Đang vận chuyển' => 80,
         'Hoàn thành' => 100,
         'Đã hủy' => 0

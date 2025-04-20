@@ -67,7 +67,7 @@ include 'header.php';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Thanh toán</title>
-    <script src="https://www.paypal.com/sdk/js?client-id=YOUR_PAYPAL_CLIENT_ID&currency=USD"></script>
+    <script src="https://www.paypal.com/sdk/js?client-id=AXezv0EzYczvRc7WGgplyMmahMEPEuQyG88VxhkmncsnPf-w-Xa2fZnk-PEFsfvDIAkdpsM1JOs2hHDJ&currency=USD"></script>
 </head>
 <body>
 <div class="main-content">
@@ -215,39 +215,7 @@ include 'header.php';
         });
 
         
-        document.getElementById('paypal-button').addEventListener('click', function() {
-            const paypalContainer = document.getElementById('paypal-button-container');
-            if (paypalContainer.style.display === 'none') {
-                paypalContainer.style.display = 'block';
-                // Initialize PayPal button only when showing the container
-                if (!paypalContainer.hasChildNodes()) {
-                    paypal.Buttons({
-                        style: {
-                            layout: 'vertical',
-                            color: 'blue',
-                            shape: 'rect',
-                            label: 'paypal'
-                        },
-                        createOrder: function(data, actions) {
-                            return actions.order.create({
-                                purchase_units: [{
-                                    amount: {
-                                        value: '<?= ($total + 30000) / 23000 ?>' // Convert VND to USD
-                                    }
-                                }]
-                            });
-                        },
-                        onApprove: function(data, actions) {
-                            return actions.order.capture().then(function(details) {
-                                placeOrder('paypal');
-                            });
-                        }
-                    }).render('#paypal-button-container');
-                }
-            } else {
-                paypalContainer.style.display = 'none';
-            }
-        });
+       
 
     // Remove the old payment method radio buttons toggle code
     // Update PayPal button container styling
@@ -323,73 +291,170 @@ include 'header.php';
        
 
         function placeOrder(paymentMethod = 'cod') {
-            // Validate form
-            const form = document.getElementById('checkoutForm');
-            if (!form.checkValidity()) {
-                form.reportValidity();
-                return;
-            }
+    // Validate form
+    const form = document.getElementById('checkoutForm');
+    const formData = new FormData(form);
+    const province = document.getElementById('province');
+    const district = document.getElementById('district');
+    const ward = document.getElementById('ward');
+    
+    // Validate form fields
+    if (!form.checkValidity() || !province.value || !district.value || !ward.value) {
+        Swal.fire({
+            title: "Error!",
+            text: "Please fill in all required fields",
+            icon: "error"
+        });
+        return;
+    }
 
-            // Get form data and address elements
-            const formData = new FormData(form);
-            const province = document.getElementById('province');
-            const district = document.getElementById('district');
-            const ward = document.getElementById('ward');
-            
-            // Validate address selection
-            if (!province.value || !district.value || !ward.value) {
-                Swal.fire({
-                    title: "Lỗi!",
-                    text: "Vui lòng chọn đầy đủ địa chỉ (Tỉnh/Thành phố, Quận/Huyện, Phường/Xã)",
-                    icon: "error"
-                });
-                return;
-            }
-            
-            // Construct full address
-            const fullAddress = `${formData.get('address')}, ${ward.options[ward.selectedIndex].text}, ${district.options[district.selectedIndex].text}, ${province.options[province.selectedIndex].text}`;
+    // Create full address
+    const fullAddress = `${formData.get('address')}, ${ward.options[ward.selectedIndex].text}, ${district.options[district.selectedIndex].text}, ${province.options[province.selectedIndex].text}`;
 
-            // Prepare order data
-            const orderData = {
-                fullname: formData.get('fullname'),
-                phone: formData.get('phone'),
-                address: fullAddress,
-                payment_method: paymentMethod,
-                total_amount: <?= $total + 30000 ?>,
-                type: '<?= $_GET['type'] ?>',
-                items: '<?= isset($_GET['productId']) ? $_GET['productId'] . "_" . ($_GET['quantity'] ?? 1) : ($_GET['items'] ?? "") ?>'
-            };
+    // Prepare order data
+    const orderData = {
+        fullname: formData.get('fullname'),
+        phone: formData.get('phone'),
+        address: fullAddress,
+        payment_method: paymentMethod,
+        total_amount: <?= $total + 30000 ?>,
+        type: '<?= $_GET['type'] ?>',
+        items: '<?= isset($_GET['productId']) ? $_GET['productId'] . "_" . ($_GET['quantity'] ?? 1) : ($_GET['items'] ?? "") ?>',
+        payment_details: null
+    };
 
-            // Send order to server
-            fetch('tao_don_hang.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(orderData)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    Swal.fire({
-                        title: "Thành công!",
-                        text: "Đơn hàng của bạn đã được tạo thành công",
-                        icon: "success"
-                    }).then(() => {
-                        window.location.href = 'index.php';
-                    });
-                } else {
-                    throw new Error(data.message || 'Đặt hàng không thành công');
-                }
-            })
-            .catch(error => {
-                Swal.fire({
-                    title: "Lỗi!",
-                    text: error.message || "Có lỗi xảy ra khi xử lý đơn hàng",
-                    icon: "error"
-                });
-            });
+    // Send order to server
+    fetch('tao_don_hang.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify(orderData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => Promise.reject(err));
         }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            Swal.fire({
+                title: "Hoàn tất!",
+                text: "Tạo đơn hàng thành công!",
+                icon: "success"
+            }).then(() => {
+                window.location.href = 'index.php';
+            });
+        } else {
+            throw new Error(data.message || 'Failed to create order');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire({
+            title: "Error!",
+            text: error.message || "An error occurred while processing the order",
+            icon: "error"
+        });
+    });
+}
+
+        document.getElementById('paypal-button').addEventListener('click', function() {
+    const paypalContainer = document.getElementById('paypal-button-container');
+    if (paypalContainer.style.display === 'none') {
+        // Form validation
+        const form = document.getElementById('checkoutForm');
+        const formData = new FormData(form);
+        const province = document.getElementById('province');
+        const district = document.getElementById('district');
+        const ward = document.getElementById('ward');
+        
+        if (!form.checkValidity() || !province.value || !district.value || !ward.value) {
+            Swal.fire({
+                title: "Lỗi!",
+                text: "Vui lòng điền đầy đủ thông tin giao hàng",
+                icon: "error"
+            });
+            return;
+        }
+
+        paypalContainer.style.display = 'block';
+        
+        // Initialize PayPal button
+        paypal.Buttons({
+            createOrder: function(data, actions) {
+                const amount = (<?= $total + 30000 ?> / 23000).toFixed(2); // Convert VND to USD
+                return actions.order.create({
+                    purchase_units: [{
+                        amount: {
+                            value: amount,
+                            currency_code: 'USD'
+                        }
+                    }]
+                });
+            },
+            onApprove: function(data, actions) {
+                return actions.order.capture().then(function(details) {
+                    const fullAddress = `${formData.get('address')}, ${ward.options[ward.selectedIndex].text}, ${district.options[district.selectedIndex].text}, ${province.options[province.selectedIndex].text}`;
+                    
+                    const orderData = {
+                        fullname: formData.get('fullname'),
+                        phone: formData.get('phone'),
+                        address: fullAddress,
+                        payment_method: 'paypal',
+                        payment_details: JSON.stringify(details),
+                        total_amount: <?= $total + 30000 ?>,
+                        type: '<?= $_GET['type'] ?>',
+                        items: '<?= isset($_GET['productId']) ? $_GET['productId'] . "_" . ($_GET['quantity'] ?? 1) : ($_GET['items'] ?? "") ?>'
+                    };
+
+                    return fetch('tao_don_hang.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'same-origin',
+                        body: JSON.stringify(orderData)
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire({
+                                title: "Thành công!",
+                                text: "Thanh toán PayPal thành công!",
+                                icon: "success"
+                            }).then(() => {
+                                window.location.href = 'index.php';
+                            });
+                        } else {
+                            throw new Error(data.message || 'Đặt hàng không thành công');
+                        }
+                    });
+                });
+            },
+            onError: function(err) {
+                console.error('PayPal Error:', err);
+                Swal.fire({
+                    title: "Thành công!",
+                    text: "Đặt hàng thành công!",
+                    icon: "success"
+                }).then(() => {
+                                window.location.href = 'index.php';
+                            });
+            }
+        }).render('#paypal-button-container');
+    } else {
+        paypalContainer.style.display = 'none';
+    }
+});
     </script>
 
     <style>

@@ -65,64 +65,77 @@ include 'header.php';
                                 $tongtien = 0;
                                 if (empty($cartItems)) {
                                     echo '<tr><td colspan="7" class="text-center">Không có sản phẩm nào trong giỏ hàng</td></tr>';
-                                } else
+                                } else {
                                     foreach ($cartItems as $item):
                                         $hasDiscount = !empty($item['gia_giam']) &&
                                             strtotime($item['ngaybatdau']) <= time() &&
                                             strtotime($item['ngayketthuc']) >= time();
                                         $finalPrice = $hasDiscount ? $item['gia_sau_giam'] : $item['giaban'];
                                         $tongtien += $item['thanhtien'];
-
-                                ?>
-                                    <tr class="row-item-cart">
-                                        <td>
-                                            <label class="custom-checkbox">
-                                                <input type="checkbox" class="cart-checkbox item-checkbox"
-                                                    data-id="<?= $item['idsanpham'] ?>"
-                                                    data-price="<?= $finalPrice * $item['soluong'] ?>">
-                                                <span class="checkmark"></span>
-                                            </label>
-                                        </td>
-                                        <td data-th="stt"><?= $stt++ ?></td>
-                                        <td data-th="product">
-                                            <div class="row align-items-center">
-                                                <div class="col-sm-4">
-                                                    <a href="chi_tiet_san_pham.php?id=<?= $item['idsanpham'] ?>"><img src="<?= $item['path_anh_goc'] ?>" class="img-fluid">
+                                        $isOutOfStock = $item['soluong'] <= 0; // Check if product is out of stock
+                                        ?>
+                                        <tr class="row-item-cart <?php echo $isOutOfStock ? 'out-of-stock' : ''; ?>">
+                                            <td>
+                                                <label class="custom-checkbox">
+                                                    <input type="checkbox" class="cart-checkbox item-checkbox"
+                                                        data-id="<?= $item['idsanpham'] ?>"
+                                                        data-price="<?= $finalPrice * $item['soluong'] ?>"
+                                                        <?php echo $isOutOfStock ? 'disabled' : ''; ?>>
+                                                    <span class="checkmark"></span>
+                                                </label>
+                                            </td>
+                                            <td data-th="stt"><?= $stt++ ?></td>
+                                            <td data-th="product">
+                                                <div class="row align-items-center">
+                                                    <div class="col-sm-4">
+                                                        <a href="chi_tiet_san_pham.php?id=<?= $item['idsanpham'] ?>">
+                                                            <img src="<?= $item['path_anh_goc'] ?>" class="img-fluid">
+                                                        </a>
+                                                    </div>
+                                                    <div class="col-sm-8">
+                                                        <h3>
+                                                            <a href="chi_tiet_san_pham.php?id=<?= $item['idsanpham'] ?>">
+                                                                <?= $item['tensanpham'] ?>
+                                                                <?php if ($isOutOfStock): ?>
+                                                                    <span class="text-danger">(Hết hàng)</span>
+                                                                <?php endif; ?>
+                                                            </a>
+                                                        </h3>
+                                                    </div>
                                                 </div>
-                                                <div class="col-sm-8">
-                                                    <h3><a href="chi_tiet_san_pham.php?id=<?= $item['idsanpham'] ?>"><?= $item['tensanpham'] ?></h3>
+                                            </td>
+                                            <td data-th="quantity">
+                                                <div class="d_box_number">
+                                                    <button class="minus" onclick="updatesoluong(<?= $item['idsanpham'] ?>, 'minus')"
+                                                            <?php echo $isOutOfStock ? 'disabled' : ''; ?>>-</button>
+                                                    <input type="number" min="1" max="<?= $item['soluong'] ?>" value="<?= $item['soluong'] ?>"
+                                                        class="quantity" data-id="<?= $item['idsanpham'] ?>" readonly>
+                                                    <button class="plus" onclick="updatesoluong(<?= $item['idsanpham'] ?>, 'plus')"
+                                                            <?php echo $isOutOfStock ? 'disabled' : ''; ?>>+</button>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td data-th="quantity">
-                                            <div class="d_box_number">
-                                                <button class="minus" onclick="updatesoluong(<?= $item['idsanpham'] ?>, 'minus')">-</button>
-                                                <input type="number" min="1" value="<?= $item['soluong'] ?>"
-                                                    class="quantity" data-id="<?= $item['idsanpham'] ?>" readonly>
-                                                <button class="plus" onclick="updatesoluong(<?= $item['idsanpham'] ?>, 'plus')">+</button>
-                                            </div>
-                                        </td>
-                                        <td class="price" data-th="price">
-                                            <?php if ($hasDiscount): ?>
-                                                <div class="price-display">
-                                                    <span class="original-price"><?= number_format($item['giaban'], 0, ',', '.') ?>đ</span>
-                                                    <span class="final-price"><?= number_format($finalPrice, 0, ',', '.') ?>đ</span>
-                                                    <span class="discount-badge">-<?= number_format($item['gia_giam'], 0, ',', '.') ?>đ</span>
-                                                </div>
-                                            <?php else: ?>
-                                                <?= number_format($item['giaban'], 0, ',', '.') ?>đ
-                                            <?php endif; ?>
-                                        </td>
-                                        <td class="subtotal" data-th="subtotal">
-                                            <?= number_format($finalPrice * $item['soluong'], 0, ',', '.') ?>đ
-                                        </td>
-                                        <td class="actions" data-th="">
-                                            <button class="btn-remove" onclick="xoasanpham(<?= $item['idsanpham'] ?>)">
-                                                <i class="bx bx-trash"></i>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
+                                            </td>
+                                            <td class="price" data-th="price">
+                                                <?php if ($hasDiscount): ?>
+                                                    <div class="price-display">
+                                                        <span class="original-price"><?= number_format($item['giaban'], 0, ',', '.') ?>đ</span>
+                                                        <span class="final-price"><?= number_format($finalPrice, 0, ',', '.') ?>đ</span>
+                                                        <span class="discount-badge">-<?= number_format($item['gia_giam'], 0, ',', '.') ?>đ</span>
+                                                    </div>
+                                                <?php else: ?>
+                                                    <?= number_format($item['giaban'], 0, ',', '.') ?>đ
+                                                <?php endif; ?>
+                                            </td>
+                                            <td class="subtotal" data-th="subtotal">
+                                                <?= number_format($finalPrice * $item['soluong'], 0, ',', '.') ?>đ
+                                            </td>
+                                            <td class="actions" data-th="">
+                                                <button class="btn-remove" onclick="xoasanpham(<?= $item['idsanpham'] ?>)">
+                                                    <i class="bx bx-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach;
+                                } ?>
                             </tbody>
                             <tfoot>
                                 <tr>
@@ -349,6 +362,21 @@ include 'header.php';
 
 </html>
 <style>
+
+.out-of-stock {
+    opacity: 0.5; /* Dim the row */
+    background-color: #f8f8f8; /* Optional: slight background change */
+}
+
+.out-of-stock .d_box_number button,
+.out-of-stock .custom-checkbox .checkmark {
+    cursor: not-allowed; /* Indicate non-interactivity */
+}
+
+.out-of-stock .text-danger {
+    font-size: 14px;
+    font-weight: bold;
+}
     .price-display {
         display: flex;
         flex-direction: column;

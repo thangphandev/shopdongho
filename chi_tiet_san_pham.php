@@ -901,15 +901,25 @@ include 'header.php';
 
     function updateQuantity(action) {
         const quantityInput = document.getElementById('product-quantity');
+        const maxQuantity = <?php echo htmlspecialchars($product['soluong']); ?>; // Get max quantity from product data
         let currentQuantity = parseInt(quantityInput.value) || 1;
 
-        if (action === 'plus') {
+        if (action === 'plus' && currentQuantity < maxQuantity) {
             currentQuantity++;
         } else if (action === 'minus' && currentQuantity > 1) {
             currentQuantity--;
         }
 
         quantityInput.value = currentQuantity;
+
+        // Optional: Show alert if trying to exceed max quantity
+        if (action === 'plus' && currentQuantity >= maxQuantity) {
+            Swal.fire({
+                icon: "warning",
+                title: "Thông báo",
+                text: "Số lượng đã đạt tối đa trong kho!"
+            });
+        }
     }
 
     function addToCart(productId) {

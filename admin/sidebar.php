@@ -1,7 +1,6 @@
 <div class="sidebar bg-dark text-white">
     <div class="sidebar-header p-3">
         <h4 class="text-center">Admin Panel</h4>
-        <button class="btn btn-dark toggle-sidebar"><i class="fas fa-bars"></i></button>
     </div>
     <ul class="nav flex-column">
         <li class="nav-item">
@@ -36,6 +35,9 @@
             </li>
             <li class="nav-item">
                 <a class="nav-link text-white" href="?page=tinnhan"><i class="fas fa-comments"></i> <span>Quản lý tin nhắn</span></a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-white" href="?page=thongke"><i class="fas fa-chart-bar"></i> <span>Thống kê báo cáo</span></a>
             </li>
         
         <li class="nav-item">

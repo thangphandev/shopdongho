@@ -85,6 +85,10 @@ $role = $_SESSION['admin_role'];
                     if ($role >= 1) include '../admin/tinnhan.php';
                     else echo "<div class='alert alert-danger'>Bạn không có quyền truy cập!</div>";
                     break;    
+                case 'thongke':
+                    if ($role >= 1) include '../admin/thongke.php';
+                    else echo "<div class='alert alert-danger'>Bạn không có quyền truy cập!</div>";
+                    break;
                 default:
                     echo "<div class='alert alert-warning'>Trang không tồn tại!</div>";
             }

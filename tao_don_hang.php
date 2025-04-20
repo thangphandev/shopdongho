@@ -1,15 +1,16 @@
 <?php
-// Disable error reporting for production
-error_reporting(0);
+// Enable error logging for debugging
+error_reporting(E_ALL);
 ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+ini_set('error_log', '/path/to/php_errors.log'); // Thay bằng đường dẫn thực tế
 
-// Set JSON header
 header('Content-Type: application/json');
-
 require_once 'connect.php';
 session_start();
 
 if (!isset($_SESSION['user_id'])) {
+    http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'Unauthorized']);
     exit();
 }
@@ -20,6 +21,9 @@ try {
     if (!$data) {
         throw new Exception('Invalid JSON data');
     }
+
+    // Debug: Log received data
+    error_log('Received order data: ' . print_r($data, true));
 
     // Validate required fields
     $requiredFields = ['fullname', 'phone', 'address', 'payment_method', 'total_amount', 'type'];
@@ -36,7 +40,7 @@ try {
 
     $connect = new Connect();
 
-    // Format order data with additional fields
+    // Format order data
     $orderData = [
         'fullname' => strip_tags(trim($data['fullname'])),
         'phone' => trim($data['phone']),
@@ -45,34 +49,30 @@ try {
         'type' => $data['type'],
         'payment_method' => $data['payment_method'],
         'order_date' => date('Y-m-d H:i:s'),
-        'status' => 'pending',
-        'user_id' => $_SESSION['user_id']
+        'status' => $data['payment_method'] === 'paypal' ? 'Chuẩn bị đơn' : 'Chờ xác nhận',
+        'user_id' => $_SESSION['user_id'],
+        'payment_details' => $data['payment_details'] ?? null
     ];
 
-    // Get products based on order type
+    // Process products
     $products = [];
     if ($data['type'] === 'direct') {
-        if (isset($_GET['productId'])) {
-            $productId = (int)$_GET['productId'];
-            $quantity = isset($_GET['quantity']) ? (int)$_GET['quantity'] : 1;
-        } else {
-            list($productId, $quantity) = explode('_', $data['items']);
-            $productId = (int)$productId;
-            $quantity = (int)$quantity;
+        $productInfo = isset($data['items']) ? explode('_', $data['items']) : [];
+        if (count($productInfo) !== 2) {
+            throw new Exception('Invalid product info');
         }
 
-        // Validate product existence and stock
+        $productId = (int)$productInfo[0];
+        $quantity = (int)$productInfo[1];
+
         $product = $connect->getProductDetails($productId);
-        if (!$product) {
-            throw new Exception('Product not found');
-        }
-        if ($product['soluong'] < $quantity) {
-            throw new Exception('Insufficient stock');
+        if (!$product || $product['soluong'] < $quantity) {
+            throw new Exception(!$product ? 'Product not found' : 'Insufficient stock');
         }
 
-        $price = !empty($product['gia_giam']) ? 
-                 ($product['giaban'] - $product['gia_giam']) : 
-                 $product['giaban'];
+        $price = !empty($product['gia_giam']) ?
+            ($product['giaban'] - $product['gia_giam']) :
+            $product['giaban'];
         $products[] = [
             'tensanpham' => $product['tensanpham'],
             'idsanpham' => $productId,
@@ -80,23 +80,22 @@ try {
             'price' => $price,
             'subtotal' => $price * $quantity
         ];
-    } else if ($data['type'] === 'cart' && !empty($data['items'])) {
-        $items = explode(',', $data['items']);
-        foreach ($items as $item) {
+    } elseif ($data['type'] === 'cart' && !empty($data['items'])) {
+        foreach (explode(',', $data['items']) as $item) {
             list($productId, $quantity) = explode('_', $item);
             $product = $connect->getProductDetails((int)$productId);
-            
-            // Validate each cart item
-            if (!$product) {
-                throw new Exception("Product ID {$productId} not found");
-            }
-            if ($product['soluong'] < (int)$quantity) {
-                throw new Exception("Insufficient stock for product: {$product['tensanpham']}");
+
+            if (!$product || $product['soluong'] < (int)$quantity) {
+                throw new Exception(
+                    !$product ?
+                        "Product ID {$productId} not found" :
+                        "Insufficient stock for product: {$product['tensanpham']}"
+                );
             }
 
-            $price = !empty($product['gia_giam']) ? 
-                     ($product['giaban'] - $product['gia_giam']) : 
-                     $product['giaban'];
+            $price = !empty($product['gia_giam']) ?
+                ($product['giaban'] - $product['gia_giam']) :
+                $product['giaban'];
             $products[] = [
                 'tensanpham' => $product['tensanpham'],
                 'idsanpham' => (int)$productId,
@@ -111,19 +110,14 @@ try {
         throw new Exception('No valid products found');
     }
 
-    // Validate total amount
-    $calculatedTotal = array_sum(array_column($products, 'subtotal')) + 30000; // Including shipping fee
-    if (abs($calculatedTotal - $data['total_amount']) > 1) { // Allow 1đ difference for floating-point calculations
+    // Validate total amount (including shipping fee)
+    $calculatedTotal = array_sum(array_column($products, 'subtotal')) + 30000;
+    if (abs($calculatedTotal - $data['total_amount']) > 1) {
         throw new Exception('Total amount mismatch');
     }
 
-    // Create the order
-    $result = $connect->createOrder(
-        $_SESSION['user_id'], 
-        $orderData, 
-        $products, 
-        $data['payment_method']
-    );
+    // Create order and process
+    $result = $connect->createOrder($_SESSION['user_id'], $orderData, $products, $data['payment_method']);
 
     if ($result['success']) {
         // Update product stock
@@ -131,35 +125,46 @@ try {
             $connect->updateProductStock($product['idsanpham'], $product['quantity']);
         }
 
-        // Clear cart if order was from cart
+        // Clear cart items if order was from cart
         if ($data['type'] === 'cart') {
-            try {
-                $purchasedProductIds = array_map(function($item) {
-                    return explode('_', $item)[0];
-                }, explode(',', $data['items']));
-                
-                $connect->removePurchasedItems($_SESSION['user_id'], $purchasedProductIds);
-            } catch (Exception $e) {
-                error_log("Error removing purchased items: " . $e->getMessage());
-            }
+            $purchasedProductIds = array_map(function ($item) {
+                return explode('_', $item)[0];
+            }, explode(',', $data['items']));
+
+            $connect->removePurchasedItems($_SESSION['user_id'], $purchasedProductIds);
         }
 
-        // Send order confirmation email
+        // Send confirmation email
         try {
             $userInfo = $connect->getUserById($_SESSION['user_id']);
             require_once 'send_email.php';
+
+            // $emailData = [
+            //     'orderData' => $orderData,
+            //     'products' => $products,
+            //     'userEmail' => $userInfo['email']
+            // ];
+
             sendOrderConfirmation($orderData, $products, $userInfo['email']);
         } catch (Exception $e) {
             error_log("Error sending confirmation email: " . $e->getMessage());
         }
     }
 
+    http_response_code(200);
     echo json_encode($result);
-
 } catch (Exception $e) {
     error_log("Order processing error: " . $e->getMessage());
+    http_response_code(400);
     echo json_encode([
         'success' => false,
         'message' => $e->getMessage()
+    ]);
+} catch (Throwable $t) {
+    error_log("Unexpected error in tao_don_hang.php: " . $t->getMessage());
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'message' => 'Internal server error'
     ]);
 }

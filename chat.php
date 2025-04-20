@@ -26,13 +26,10 @@ include 'header.php';
         <div class="col-md-10 mx-auto">
             <div class="chat-container">
                 <div class="chat-header">
-                    <h2>Chat với Shop</h2>
-                    <p>Chúng tôi luôn sẵn sàng hỗ trợ bạn</p>
+                    <h2>Chatbot AI</h2>                   
                 </div>
                 
                 <div class="chat-body">
-                    <!-- Rest of the chat body remains the same -->
-                    <!-- ... existing code ... -->
                     <div class="chat-messages" id="chatMessages">
                         <?php if (empty($chatHistory)): ?>
                             <div class="message shop-message">
@@ -45,7 +42,7 @@ include 'header.php';
                             <?php foreach ($chatHistory as $message): ?>
                                 <div class="message <?php echo ($message['role'] == 0) ? 'user-message' : 'shop-message'; ?>">
                                     <div class="message-content">
-                                        <p><?php echo htmlspecialchars($message['noidungchat']); ?></p>
+                                        <?php echo $message['noidungchat']; ?>
                                         <span class="message-time"><?php echo date('H:i', strtotime($message['thoigian'])); ?></span>
                                     </div>
                                 </div>
@@ -55,7 +52,7 @@ include 'header.php';
                     
                     <div class="chat-input">
                         <form id="chatForm">
-                            <input type="text" id="messageInput" placeholder="Nhập tin nhắn..." required>
+                            <textarea id="messageInput" placeholder="Nhập tin nhắn..." required rows="2"></textarea>
                             <button type="submit" id="sendButton">
                                 <i class="fa fa-paper-plane"></i>
                             </button>
@@ -68,13 +65,54 @@ include 'header.php';
 </div>
 
 <style>
+.product-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.product-card {
+    display: flex;
+    align-items: center;
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 8px;
+    text-decoration: none;
+    color: #333;
+    width: 200px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.product-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.product-image {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 4px;
+    margin-right: 10px;
+}
+
+.product-name {
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 
 .chat-page-container {
-    padding-top: 120px; /* Tăng giá trị này để đẩy container xuống dưới header */
+    padding-top: 100px;
     position: relative;
     z-index: 1;
-    margin-top: 30px; /* Thêm margin-top để tạo khoảng cách với header */
-    max-width: 1000px;
+    margin-top: 30px;
+    max-width: 1300px;
+    height: 100%;
 }
 
 .chat-container {
@@ -85,14 +123,14 @@ include 'header.php';
     margin-bottom: 50px;
     font-size: 16px;
     position: relative;
-    z-index: 10; /* Higher than header */
+    z-index: 10;
     width: 100%;
 }
 
 .chat-header {
     background-color: #c8a96a;
     color: #fff;
-    padding: 20px;
+    padding: 10px;
     text-align: center;
 }
 
@@ -110,7 +148,7 @@ include 'header.php';
 .chat-body {
     display: flex;
     flex-direction: column;
-    height: 500px;
+    height: 550px;
 }
 
 .chat-messages {
@@ -118,6 +156,7 @@ include 'header.php';
     padding: 20px;
     overflow-y: auto;
     background-color: #f5f5f5;
+    height: 100%;
 }
 
 .message {
@@ -155,6 +194,7 @@ include 'header.php';
 .message-content p {
     margin: 0;
     word-wrap: break-word;
+    white-space: pre-wrap;
 }
 
 .message-time {
@@ -175,16 +215,18 @@ include 'header.php';
     display: flex;
 }
 
-.chat-input input {
+.chat-input textarea {
     flex: 1;
     padding: 12px 15px;
     border: 1px solid #ddd;
-    border-radius: 30px;
+    border-radius: 15px;
     outline: none;
     font-size: 16px;
+    resize: none;
+    line-height: 1.5;
 }
 
-.chat-input input:focus {
+.chat-input textarea:focus {
     border-color: #c8a96a;
 }
 
@@ -241,7 +283,6 @@ include 'header.php';
     }
 }
 
-/* Responsive styles */
 @media (max-width: 768px) {
     .chat-container {
         margin: 15px;
@@ -267,7 +308,15 @@ $(document).ready(function() {
     
     // Initial scroll to bottom
     scrollToBottom();
-    
+
+    // Handle Enter key without Shift
+    $('#messageInput').on('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            $('#chatForm').submit();
+        }
+    });
+
     // Send message
     $('#chatForm').submit(function(e) {
         e.preventDefault();
@@ -276,7 +325,7 @@ $(document).ready(function() {
         const message = messageInput.val().trim();
         
         if (message) {
-            // Add message to UI immediately
+            // Add user message to UI
             const currentTime = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
             $('#chatMessages').append(`
                 <div class="message user-message">
@@ -318,12 +367,13 @@ $(document).ready(function() {
                     $('#typingIndicator').remove();
                     
                     if (response.success) {
-                        // Add bot response to UI
+                        // Add bot response to UI (hiển thị trực tiếp HTML từ API)
+                        const currentTime = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                         $('#chatMessages').append(`
                             <div class="message shop-message">
                                 <div class="message-content">
-                                    <p>${response.botResponse}</p>
-                                    <span class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                    ${response.botResponse}
+                                    <span class="message-time">${currentTime}</span>
                                 </div>
                             </div>
                         `);
@@ -334,7 +384,7 @@ $(document).ready(function() {
                             <div class="message shop-message">
                                 <div class="message-content">
                                     <p>Xin lỗi, có lỗi xảy ra. Vui lòng thử lại sau.</p>
-                                    <span class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                    <span class="message-time">${currentTime}</span>
                                 </div>
                             </div>
                         `);
@@ -350,17 +400,16 @@ $(document).ready(function() {
                         <div class="message shop-message">
                             <div class="message-content">
                                 <p>Xin lỗi, có lỗi xảy ra khi kết nối với máy chủ. Vui lòng thử lại sau.</p>
-                                <span class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                <span class="message-time">${currentTime}</span>
+                                </div>
                             </div>
-                        </div>
-                    `);
-                    scrollToBottom();
-                }
-            });
+                        `);
+                        scrollToBottom();
+                    }
+                });
         }
     });
 });
 </script>
 
 <?php include 'footer.php'; ?>
-
