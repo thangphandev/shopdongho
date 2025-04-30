@@ -103,7 +103,8 @@ $orders = $connect->getAllOrdersAdmin($search, $status);
                                 <button type="button" class="btn btn-sm btn-primary edit-order-status" 
                                         data-id="<?php echo $order['iddonhang']; ?>"
                                         data-status="<?php echo htmlspecialchars($order['trangthai']); ?>"
-                                        data-bs-toggle="modal" data-bs-target="#editOrderStatusModal">
+                                        data-bs-toggle="modal" data-bs-target="#editOrderStatusModal"
+                                        <?php echo ($order['trangthai'] === 'Đã hủy') ? 'disabled' : ''; ?>>
                                     <i class="fas fa-edit"></i>
                                 </button>
                                 <button type="button" class="btn btn-sm btn-danger delete-order" 
@@ -223,6 +224,9 @@ document.querySelectorAll('.view-order').forEach(button => {
 
 document.querySelectorAll('.edit-order-status').forEach(button => {
     button.addEventListener('click', function() {
+        if (this.hasAttribute('disabled')) {
+            return;
+        }
         const id = this.getAttribute('data-id');
         const status = this.getAttribute('data-status');
         

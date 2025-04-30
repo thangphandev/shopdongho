@@ -30,9 +30,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     $_POST['email'],
                     !empty($_POST['matkhau']) ? $_POST['matkhau'] : null
                 );
+
+                // Cập nhật quyền truy cập
+                $permissions = isset($_POST['permissions']) ? $_POST['permissions'] : [];
+                $permData = [
+                    'sanpham' => isset($permissions['sanpham']) ? 1 : 0,
+                    'danhmuc' => isset($permissions['danhmuc']) ? 1 : 0,
+                    'loaimay' => isset($permissions['loaimay']) ? 1 : 0,
+                    'loaiday' => isset($permissions['loaiday']) ? 1 : 0,
+                    'nhacungcap' => isset($permissions['nhacungcap']) ? 1 : 0,
+                    'donhang' => isset($permissions['donhang']) ? 1 : 0,
+                    'khachhang' => isset($permissions['khachhang']) ? 1 : 0,
+                    'nhanvien' => isset($permissions['nhanvien']) ? 1 : 0,
+                    'danhgia' => isset($permissions['danhgia']) ? 1 : 0,
+                    'tinnhan' => isset($permissions['tinnhan']) ? 1 : 0,
+                    'baocao' => isset($permissions['baocao']) ? 1 : 0
+                ];
+                $permResult = $connect->updatePermissions($_POST['id'], $permData);
+
                 echo json_encode([
-                    'success' => $result,
-                    'message' => $result ? 'Cập nhật thành công' : 'Không thể cập nhật thông tin'
+                    'success' => $result && $permResult,
+                    'message' => ($result && $permResult) ? 'Cập nhật thành công' : 'Không thể cập nhật thông tin hoặc quyền'
                 ]);
             }
             break;
@@ -41,8 +59,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             if (isset($_POST['id'])) {
                 $staff = $connect->getStaffById($_POST['id']);
                 echo json_encode([
-                    'success' => true,
+                    'success' => $staff !== false,
                     'data' => $staff
+                ]);
+            }
+            break;
+
+        case 'get_permissions':
+            if (isset($_POST['id'])) {
+                $permissions = $connect->getPermissions($_POST['id']);
+                echo json_encode([
+                    'success' => true,
+                    'data' => $permissions
                 ]);
             }
             break;

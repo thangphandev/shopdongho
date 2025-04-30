@@ -28,8 +28,6 @@ try {
                 
                 if ($connect->addStrapType($data)) {
                     $_SESSION['success_message'] = 'Thêm loại dây thành công!';
-                } else {
-                    throw new Exception('Không thể thêm loại dây');
                 }
                 break;
 
@@ -47,8 +45,6 @@ try {
                 
                 if ($connect->updateStrapType($data)) {
                     $_SESSION['success_message'] = 'Cập nhật loại dây thành công!';
-                } else {
-                    throw new Exception('Không thể cập nhật loại dây');
                 }
                 break;
 
@@ -64,20 +60,10 @@ try {
                     throw new Exception('Không thể xóa loại dây');
                 }
                 break;
-
-            default:
-                throw new Exception('Hành động không hợp lệ');
-        }
-        
-        header('Location: admin.php?page=loaiday');
-        exit;
-        
-    } else {
-        throw new Exception('Phương thức không được hỗ trợ');
+            }   
     }
-    
 } catch (Exception $e) {
     $_SESSION['error_message'] = $e->getMessage();
-    header('Location: admin.php?page=loaiday');
-    exit;
 }
+header('Location: admin.php?page=loaiday');
+    exit;

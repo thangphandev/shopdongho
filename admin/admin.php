@@ -4,7 +4,7 @@ require_once '../connect.php';
 
 $connect = new Connect();
 
-// Kiểm tra đăng nhập và phân quyền
+// Kiểm tra đăng nhập
 if (!isset($_SESSION['admin_id'])) {
     header('Location: ../login.php');
     exit();
@@ -12,6 +12,25 @@ if (!isset($_SESSION['admin_id'])) {
 
 $page = $_GET['page'] ?? 'dashboard';
 $role = $_SESSION['admin_role'];
+$userId = $_SESSION['admin_id'];
+
+// Lấy quyền truy cập nếu role = 1
+$permissions = ($role == 1) ? $connect->getPermissions($userId) : [];
+
+// Danh sách các trang yêu cầu quyền
+$permissionPages = [
+    'products' => 'sanpham',
+    'danhmuc' => 'danhmuc',
+    'loaimay' => 'loaimay',
+    'loaiday' => 'loaiday',
+    'nhacungcap' => 'nhacungcap',
+    'donhang' => 'donhang',
+    'khachhang' => 'khachhang',
+    'nhanvien' => 'nhanvien',
+    'danhgia' => 'danhgia',
+    'tinnhan' => 'tinnhan',
+    'thongke' => 'baocao'
+];
 ?>
 
 <!DOCTYPE html>
@@ -38,56 +57,83 @@ $role = $_SESSION['admin_role'];
                     include '../admin/dashboard.php';
                     break;
                 case 'products':
-                    if ($role >= 1) include '../admin/products.php';
-                    else echo "<div class='alert alert-danger'>Bạn không có quyền truy cập!</div>";
-                    break;
-                case 'product_form':  // Add this case
-                    if ($role >= 1) include '../admin/product_form.php';
-                    else echo "<div class='alert alert-danger'>Bạn không có quyền truy cập!</div>";
+                case 'product_form':
+                    if ($role == 2 || ($role == 1 && $permissions['sanpham'] == 1)) {
+                        include '../admin/' . ($page == 'products' ? 'products.php' : 'product_form.php');
+                    } else {
+                        echo "<div class='alert alert-danger'>Bạn không có quyền truy cập!</div>";
+                    }
                     break;
                 case 'danhmuc':
-                    if ($role >= 1) include '../admin/danhmuc.php';
-                    else echo "<div class='alert alert-danger'>Bạn không có quyền truy cập!</div>";
+                    if ($role == 2 || ($role == 1 && $permissions['danhmuc'] == 1)) {
+                        include '../admin/danhmuc.php';
+                    } else {
+                        echo "<div class='alert alert-danger'>Bạn không có quyền truy cập!</div>";
+                    }
                     break;
                 case 'loaimay':
-                    if ($role >= 1) include '../admin/loaimay.php';
-                    else echo "<div class='alert alert-danger'>Bạn không có quyền truy cập!</div>";
+                    if ($role == 2 || ($role == 1 && $permissions['loaimay'] == 1)) {
+                        include '../admin/loaimay.php';
+                    } else {
+                        echo "<div class='alert alert-danger'>Bạn không có quyền truy cập!</div>";
+                    }
                     break;
                 case 'loaiday':
-                    if ($role >= 1) include '../admin/loaiday.php';
-                    else echo "<div class='alert alert-danger'>Bạn không có quyền truy cập!</div>";
+                    if ($role == 2 || ($role == 1 && $permissions['loaiday'] == 1)) {
+                        include '../admin/loaiday.php';
+                    } else {
+                        echo "<div class='alert alert-danger'>Bạn không có quyền truy cập!</div>";
+                    }
                     break;
                 case 'nhacungcap':
-                    if ($role >= 1) include '../admin/nhacungcap.php';
-                    else echo "<div class='alert alert-danger'>Bạn không có quyền truy cập!</div>";
-                    break;                    
+                    if ($role == 2 || ($role == 1 && $permissions['nhacungcap'] == 1)) {
+                        include '../admin/nhacungcap.php';
+                    } else {
+                        echo "<div class='alert alert-danger'>Bạn không có quyền truy cập!</div>";
+                    }
+                    break;
                 case 'nhanvien':
-                    if ($role == 2) include '../admin/nhanvien.php';
-                    else echo "<div class='alert alert-danger'>Bạn không có quyền truy cập!</div>";
+                    if ($role == 2 || ($role == 1 && $permissions['nhanvien'] == 1)) {
+                        include '../admin/nhanvien.php';
+                    } else {
+                        echo "<div class='alert alert-danger'>Bạn không có quyền truy cập!</div>";
+                    }
                     break;
                 case 'khachhang':
-                    if ($role >= 1) include '../admin/khachhang.php';
-                    else echo "<div class='alert alert-danger'>Bạn không có quyền truy cập!</div>";
+                    if ($role == 2 || ($role == 1 && $permissions['khachhang'] == 1)) {
+                        include '../admin/khachhang.php';
+                    } else {
+                        echo "<div class='alert alert-danger'>Bạn không có quyền truy cập!</div>";
+                    }
                     break;
                 case 'donhang':
-                    if ($role >= 1) include '../admin/donhang.php';
-                    else echo "<div class='alert alert-danger'>Bạn không có quyền truy cập!</div>";
-                    break;
                 case 'chitietdonhang':
-                    if ($role >= 1) include '../admin/chitietdonhang.php';
-                    else echo "<div class='alert alert-danger'>Bạn không có quyền truy cập!</div>";
+                    if ($role == 2 || ($role == 1 && $permissions['donhang'] == 1)) {
+                        include '../admin/' . ($page == 'donhang' ? 'donhang.php' : 'chitietdonhang.php');
+                    } else {
+                        echo "<div class='alert alert-danger'>Bạn không có quyền truy cập!</div>";
+                    }
                     break;
                 case 'danhgia':
-                    if ($role >= 1) include '../admin/danhgia.php';
-                    else echo "<div class='alert alert-danger'>Bạn không có quyền truy cập!</div>";
+                    if ($role == 2 || ($role == 1 && $permissions['danhgia'] == 1)) {
+                        include '../admin/danhgia.php';
+                    } else {
+                        echo "<div class='alert alert-danger'>Bạn không có quyền truy cập!</div>";
+                    }
                     break;
                 case 'tinnhan':
-                    if ($role >= 1) include '../admin/tinnhan.php';
-                    else echo "<div class='alert alert-danger'>Bạn không có quyền truy cập!</div>";
-                    break;    
+                    if ($role == 2 || ($role == 1 && $permissions['tinnhan'] == 1)) {
+                        include '../admin/tinnhan.php';
+                    } else {
+                        echo "<div class='alert alert-danger'>Bạn không có quyền truy cập!</div>";
+                    }
+                    break;
                 case 'thongke':
-                    if ($role >= 1) include '../admin/thongke.php';
-                    else echo "<div class='alert alert-danger'>Bạn không có quyền truy cập!</div>";
+                    if ($role == 2 || ($role == 1 && $permissions['baocao'] == 1)) {
+                        include '../admin/thongke.php';
+                    } else {
+                        echo "<div class='alert alert-danger'>Bạn không có quyền truy cập!</div>";
+                    }
                     break;
                 default:
                     echo "<div class='alert alert-warning'>Trang không tồn tại!</div>";
@@ -105,7 +151,7 @@ $role = $_SESSION['admin_role'];
                 $('.sidebar').toggleClass('collapsed');
                 $('.main-content').toggleClass('expanded');
             });
-            
+
             // Highlight active menu item
             const currentPage = '<?php echo $page; ?>';
             $(`.nav-link[href="?page=${currentPage}"]`).addClass('active');

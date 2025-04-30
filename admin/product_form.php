@@ -227,8 +227,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <div class="mb-3">
                                     <label for="giaban" class="form-label">Giá bán <span class="text-danger">*</span></label>
                                     <div class="input-group">
-                                        <input type="text" class="form-control" id="giaban" name="giaban" value="<?php echo $product['giaban']; ?>" required>
+                                        <input type="text" class="form-control" id="giaban" name="giaban" value="<?php echo $product['giaban']; ?>" min="0" onkeypress="return event.charCode >= 48"  required>
                                         <span class="input-group-text">₫</span>
+                                    </div>
+                                    <div id="giaban-error" class="invalid-feedback" style="display: none;">
+                                        Giá bán phải lớn hơn giá nhập
                                     </div>
                                 </div>
                             </div>
@@ -236,7 +239,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <div class="mb-3">
                                     <label for="gianhap" class="form-label">Giá nhập <span class="text-danger">*</span></label>
                                     <div class="input-group">
-                                        <input type="text" class="form-control" id="gianhap" name="gianhap" value="<?php echo $product['gianhap']; ?>" required>
+                                        <input type="text" class="form-control" id="gianhap" name="gianhap" value="<?php echo $product['gianhap']; ?>" min="0" onkeypress="return event.charCode >= 48" required>
                                         <span class="input-group-text">₫</span>
                                     </div>
                                 </div>
@@ -247,7 +250,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="soluong" class="form-label">Số lượng <span class="text-danger">*</span></label>
-                                    <input type="number" class="form-control" id="soluong" name="soluong" value="<?php echo $product['soluong']; ?>" required>
+                                    <input type="number" class="form-control" id="soluong" name="soluong" value="<?php echo $product['soluong']; ?>" min="0" onkeypress="return event.charCode >= 48"  oninput="validity.valid||(value='');" required>
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -537,7 +540,34 @@ document.getElementById('additional_images').addEventListener('change', function
         });
     }
 });
+function validatePrices() {
+    const giaban = parseFloat(document.getElementById('giaban').value) || 0;
+    const gianhap = parseFloat(document.getElementById('gianhap').value) || 0;
+    const giabanError = document.getElementById('giaban-error');
+    const submitButton = document.querySelector('button[type="submit"]');
 
+    if (giaban <= gianhap && giaban !== 0) {
+        giabanError.style.display = 'block';
+        document.getElementById('giaban').classList.add('is-invalid');
+        submitButton.disabled = true;
+    } else {
+        giabanError.style.display = 'none';
+        document.getElementById('giaban').classList.remove('is-invalid');
+        submitButton.disabled = false;
+    }
+}
+
+// Add form validation before submit
+document.querySelector('form').addEventListener('submit', function(e) {
+    const giaban = parseFloat(document.getElementById('giaban').value) || 0;
+    const gianhap = parseFloat(document.getElementById('gianhap').value) || 0;
+
+    if (giaban <= gianhap) {
+        e.preventDefault();
+        document.getElementById('giaban-error').style.display = 'block';
+        document.getElementById('giaban').classList.add('is-invalid');
+    }
+});
 // Delete existing images
 document.querySelectorAll('.delete-image').forEach(button => {
     button.addEventListener('click', function(e) {

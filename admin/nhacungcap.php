@@ -119,9 +119,11 @@ $suppliers = $connect->getAllSuppliers($search);
                         <textarea class="form-control" id="diachi" name="diachi" rows="3" required></textarea>
                     </div>
                     <div class="mb-3">
-                        <label for="sdt" class="form-label">Số điện thoại</label>
-                        <input type="tel" class="form-control" id="sdt" name="sdt" required 
-                               pattern="[0-9]{10,11}" title="Số điện thoại phải từ 10-11 số">
+                        <label for="edit_sdt" class="form-label">Số điện thoại</label>
+                        <input type="tel" class="form-control" id="edit_sdt" name="sdt" required 
+                            pattern="^0[0-9]{9}$" 
+                            oninput="this.value = this.value.replace(/[^0-9]/g, '').substring(0, 10)"
+                            title="Số điện thoại phải bắt đầu bằng số 0 và có 10 chữ số">
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -180,6 +182,58 @@ document.querySelectorAll('.edit-supplier').forEach(button => {
         document.getElementById('edit_tennhacungcap').value = name;
         document.getElementById('edit_diachi').value = address;
         document.getElementById('edit_sdt').value = phone;
+    });
+});
+function validatePhoneNumber(input) {
+    let phone = input.value;
+    
+    // Remove any non-digit characters
+    phone = phone.replace(/\D/g, '');
+    
+    // Ensure it starts with 0
+    if (phone.length > 0 && phone[0] !== '0') {
+        phone = '0' + phone;
+    }
+    
+    // Limit to 10 digits
+    phone = phone.substring(0, 10);
+    
+    // Update input value
+    input.value = phone;
+    
+    // Validate format
+    if (!/^0[0-9]{9}$/.test(phone)) {
+        input.setCustomValidity('Số điện thoại phải bắt đầu bằng số 0 và có 10 chữ số');
+    } else {
+        input.setCustomValidity('');
+    }
+}
+
+// Add event listeners to phone inputs
+document.getElementById('sdt').addEventListener('input', function() {
+    validatePhoneNumber(this);
+});
+
+document.getElementById('edit_sdt').addEventListener('input', function() {
+    validatePhoneNumber(this);
+});
+
+function validatePhone(input) {
+    // Remove any non-digit characters
+    let phone = input.value.replace(/\D/g, '');
+    
+    // Ensure exactly 10 digits
+    if (phone.length !== 10) {
+        input.setCustomValidity('Số điện thoại phải có 10 chữ số!');
+    } else {
+        input.setCustomValidity('');
+    }
+}
+
+// Add to your existing form elements
+document.querySelectorAll('input[name="sdt"]').forEach(input => {
+    input.addEventListener('input', function() {
+        validatePhone(this);
     });
 });
 

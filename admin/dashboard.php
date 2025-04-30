@@ -260,63 +260,7 @@ $totalProfit = $connect->calculateProfit($currentMonth, $currentYear);
     </div>
     
     <!-- Top Profit Products -->
-    <div class="row">
-        <div class="col-12 mb-4">
-            <div class="card">
-                <div class="card-header bg-white">
-                    <h3 class="card-title mb-0">Sản phẩm có lợi nhuận cao nhất</h3>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead class="bg-light">
-                                <tr>
-                                    <th>Sản phẩm</th>
-                                    <th>Số lượng đã bán</th>
-                                    <th>Doanh thu</th>
-                                    <th>Lợi nhuận</th>
-                                    <th>Tỷ suất lợi nhuận</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php if (empty($topProfitProducts)): ?>
-                                    <tr>
-                                        <td colspan="5" class="text-center">Không có dữ liệu</td>
-                                    </tr>
-                                <?php else: ?>
-                                    <?php foreach ($topProfitProducts as $product): ?>
-                                        <tr>
-                                            <td>
-                                                <div class="d-flex align-items-center">
-                                                    <?php if (!empty($product['path_anh_goc'])): ?>
-                                                        <img src="../<?php echo $product['path_anh_goc']; ?>" alt="<?php echo $product['tensanpham']; ?>" class="img-thumbnail mr-3" style="width: 50px; height: 50px; object-fit: cover;">
-                                                    <?php endif; ?>
-                                                    <span><?php echo $product['tensanpham']; ?></span>
-                                                </div>
-                                            </td>
-                                            <td><?php echo $product['total_sold']; ?></td>
-                                            <td><?php echo number_format($product['total_revenue'], 0, ',', '.'); ?> ₫</td>
-                                            <td><?php echo number_format($product['total_profit'], 0, ',', '.'); ?> ₫</td>
-                                            <td>
-                                                <?php 
-                                                    $profitMargin = ($product['total_revenue'] > 0) ? 
-                                                        ($product['total_profit'] / $product['total_revenue'] * 100) : 0;
-                                                    echo number_format($profitMargin, 2) . '%';
-                                                ?>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="card-footer bg-white">
-                    <a href="admin.php?page=products" class="btn btn-sm btn-primary">Quản lý sản phẩm</a>
-                </div>
-            </div>
-        </div>
-    </div>
+    
     <div class="row">
     <!-- Top Selling Products -->
     <div class="col-md-6 mb-4">
@@ -343,12 +287,24 @@ $totalProfit = $connect->calculateProfit($currentMonth, $currentYear);
                             <?php else: ?>
                                 <?php foreach ($topSellingProducts as $product): ?>
                                     <tr>
-                                        <td>
+                                    <td>
                                             <div class="d-flex align-items-center">
                                                 <?php if (!empty($product['path_anh_goc'])): ?>
-                                                    <img src="../<?php echo $product['path_anh_goc']; ?>" alt="<?php echo $product['tensanpham']; ?>" class="img-thumbnail mr-3" style="width: 50px; height: 50px; object-fit: cover;">
+                                                    <a href="admin.php?page=product_form&id=<?php echo $product['idsanpham']; ?>">
+                                                        <img src="../<?php echo $product['path_anh_goc']; ?>" 
+                                                            alt="<?php echo $product['tensanpham']; ?>" 
+                                                            class="img-thumbnail mr-3" 
+                                                            style="width: 50px; height: 50px; object-fit: cover;">
+                                                    </a>
                                                 <?php endif; ?>
-                                                <span><?php echo $product['tensanpham']; ?></span>
+                                                <a href="admin.php?page=product_form&id=<?php echo $product['idsanpham']; ?>" 
+                                                class="text-decoration-none">
+                                                <span title="<?php echo htmlspecialchars($product['tensanpham']); ?>">
+                                                    <?php echo strlen($product['tensanpham']) > 20 ? 
+                                                        htmlspecialchars(substr($product['tensanpham'], 0, 17)) . '...' : 
+                                                        htmlspecialchars($product['tensanpham']); ?>
+                                                </span>
+                                                </a>
                                             </div>
                                         </td>
                                         <td><?php echo number_format($product['giaban'], 0, ',', '.'); ?> ₫</td>
@@ -392,14 +348,26 @@ $totalProfit = $connect->calculateProfit($currentMonth, $currentYear);
                             <?php else: ?>
                                 <?php foreach ($lowStockProducts as $product): ?>
                                     <tr>
-                                        <td>
-                                            <div class="d-flex align-items-center">
-                                                <?php if (!empty($product['path_anh_goc'])): ?>
-                                                    <img src="../<?php echo $product['path_anh_goc']; ?>" alt="<?php echo $product['tensanpham']; ?>" class="img-thumbnail mr-3" style="width: 50px; height: 50px; object-fit: cover;">
-                                                <?php endif; ?>
-                                                <span><?php echo $product['tensanpham']; ?></span>
-                                            </div>
-                                        </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <?php if (!empty($product['path_anh_goc'])): ?>
+                                                <a href="admin.php?page=product_form&id=<?php echo $product['idsanpham']; ?>">
+                                                    <img src="../<?php echo $product['path_anh_goc']; ?>" 
+                                                        alt="<?php echo $product['tensanpham']; ?>" 
+                                                        class="img-thumbnail mr-3" 
+                                                        style="width: 50px; height: 50px; object-fit: cover;">
+                                                </a>
+                                            <?php endif; ?>
+                                            <a href="admin.php?page=product_form&id=<?php echo $product['idsanpham']; ?>" 
+                                            class="text-decoration-none">
+                                            <span title="<?php echo htmlspecialchars($product['tensanpham']); ?>">
+                                                <?php echo strlen($product['tensanpham']) > 20 ? 
+                                                    htmlspecialchars(substr($product['tensanpham'], 0, 17)) . '...' : 
+                                                    htmlspecialchars($product['tensanpham']); ?>
+                                            </span>
+                                            </a>
+                                        </div>
+                                    </td>
                                         <td><?php echo $product['tendanhmuc']; ?></td>
                                         <td><?php echo number_format($product['giaban'], 0, ',', '.'); ?> ₫</td>
                                         <td>

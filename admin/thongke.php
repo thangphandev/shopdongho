@@ -43,12 +43,20 @@ $currentMonthData = $connect->getRevenueAndProfit($selectedMonth, $selectedYear)
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Thống kê doanh thu</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <style>
         #revenueChart {
             width: 100%;
             height: 400px;
+        }
+        .report-content {
+            white-space: pre-wrap;
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
         }
     </style>
 </head>
@@ -133,11 +141,55 @@ $currentMonthData = $connect->getRevenueAndProfit($selectedMonth, $selectedYear)
                 <?php endif; ?>
             </div>
         </div>
+
+        <!-- Report content -->
+        <div class="card mb-4">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Báo cáo phân tích</h5>
+                <?php if ($selectedMonth == date('n') && $selectedYear == date('Y')): ?>
+                    <button id="generateReport" class="btn btn-primary">
+                        <i class="fas fa-robot me-2"></i>Tạo báo cáo AI
+                    </button>
+                <?php endif; ?>
+            </div>
+            <div class="card-body">
+                <div id="reportLoading" class="text-center d-none">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Đang tạo báo cáo...</span>
+                    </div>
+                    <p class="mt-2">Đang phân tích dữ liệu...</p>
+                </div>
+                
+                <?php 
+                $monthlyReports = $connect->getMonthlyReports($selectedMonth, $selectedYear);
+                if (!empty($monthlyReports)): 
+                    foreach ($monthlyReports as $report): ?>
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <small class="text-muted">
+                                        Ngày tạo: <?php echo date('d/m/Y H:i', strtotime($report['ngaytao'])); ?>
+                                    </small>
+                                </div>
+                                <div class="report-content">
+                                    <?php echo nl2br(htmlspecialchars($report['noi_dung'])); ?>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach;
+                else: ?>
+                    <div class="alert alert-info">
+                        Chưa có báo cáo nào trong tháng <?php echo $selectedMonth; ?>/<?php echo $selectedYear; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Chart.js setup
         const canvas = document.getElementById('revenueChart');
         if (!canvas) {
             console.error('Canvas element with id "revenueChart" not found');
@@ -198,6 +250,45 @@ $currentMonthData = $connect->getRevenueAndProfit($selectedMonth, $selectedYear)
                 }
             }
         });
+
+        // Generate report
+        const generateBtn = document.getElementById('generateReport');
+        if (generateBtn) {
+            generateBtn.addEventListener('click', function() {
+                const reportLoading = document.getElementById('reportLoading');
+                
+                reportLoading.classList.remove('d-none');
+                generateBtn.disabled = true;
+                
+                fetch('http://localhost:5001/api/report', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert('Báo cáo đã được tạo thành công!');
+                        // Reload page with selected month and year
+                        const url = new URL(window.location.href);
+                        url.searchParams.set('month', <?php echo $selectedMonth; ?>);
+                        url.searchParams.set('year', <?php echo $selectedYear; ?>);
+                        window.location.href = url.toString();
+                    } else {
+                        alert('Lỗi khi tạo báo cáo: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error generating report:', error);
+                    alert('Đã xảy ra lỗi khi tạo báo cáo. Vui lòng thử lại.');
+                })
+                .finally(() => {
+                    reportLoading.classList.add('d-none');
+                    generateBtn.disabled = false;
+                });
+            });
+        }
     });
     </script>
 </body>

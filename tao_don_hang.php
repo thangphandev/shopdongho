@@ -49,7 +49,7 @@ try {
         'type' => $data['type'],
         'payment_method' => $data['payment_method'],
         'order_date' => date('Y-m-d H:i:s'),
-        'status' => $data['payment_method'] === 'paypal' ? 'Chuẩn bị đơn' : 'Chờ xác nhận',
+        'status' => $data['payment_method'] === 'paypal' ? 'Đã xác nhận' : 'Chờ xác nhận',
         'user_id' => $_SESSION['user_id'],
         'payment_details' => $data['payment_details'] ?? null
     ];

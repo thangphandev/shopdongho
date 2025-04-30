@@ -16,7 +16,7 @@ include 'header.php';
 <!DOCTYPE html>
 <html lang="vi">
 <html itemscope="" itemtype="http://schema.org/WebPage" lang="vi">
-<script src="js/jquery3.2.1.min.js" defer=""></script>
+    <script src="js/jquery3.2.1.min.js" defer=""></script>
     <script src="js/bootstrap.min.js" defer=""></script>
     <script src="js/jquery.fancybox.min.js" defer=""></script>
     <script src="js/toastr.min.js" defer=""></script>
@@ -26,6 +26,8 @@ include 'header.php';
     <script src="js/tiny-slider.js" defer=""></script>
     <script src="js/script.js" defer=""></script>
     <script src="js/cart.js" defer=""></script>
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
 <body>
     <div class="main-content" style="padding-top: 150px;">
         <div class="container">
@@ -127,7 +129,7 @@ include 'header.php';
                                                         alt="No Image">
                                                 <?php endif; ?>
                                                 </div>
-                                                <div class="col-5">
+                                                <div class="col-4">
                                                     <h6 class="text-white mb-1"><?= htmlspecialchars($item['tensanpham']) ?></h6>
                                                     <small class="text-warning">Mã SP: <?= htmlspecialchars($item['idsanpham']) ?></small>
                                                     <div class="product-specs">
@@ -150,7 +152,7 @@ include 'header.php';
                                                         <p class="mb-0 text-warning"><?= number_format($item['giaban'], 0, ',', '.') ?>đ</p>
                                                     </div>
                                                 </div>
-                                                <div class="col-1 text-end">
+                                                <div class="col-2 text-end">
                                                     <div class="total-box">
                                                         <span class="text-white">Thành tiền:</span>
                                                         <p class="mb-0 text-warning fw-bold"><?= number_format($itemTotal, 0, ',', '.') ?>đ</p>
@@ -314,22 +316,45 @@ include 'header.php';
 
     <script>
     function cancelOrder(orderId) {
-        if (confirm('Bạn có chắc muốn hủy đơn hàng này?')) {
-            $.ajax({
-                url: 'huy_don_hang.php',
-                type: 'POST',
-                data: { orderId: orderId },
-                success: function(response) {
-                    const data = JSON.parse(response);
-                    if (data.success) {
-                        location.reload();
-                    } else {
-                        alert(data.message || 'Không thể hủy đơn hàng.');
-                    }
-                }
+    Swal.fire({
+        title: "Hủy đơn hàng?",
+        text: "Bạn có chắc muốn hủy đơn hàng này?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#d33",
+        cancelButtonColor: "#3085d6",
+        confirmButtonText: "Hủy đơn hàng",
+        cancelButtonText: "Đóng"
+    }).then((result) => {
+        if (result.isConfirmed) {
+            Swal.fire({
+                title: "Thành công!",
+                text: "Đơn hàng đã được hủy thành công",
+                icon: "success",
+                timer: 1500,
+                showConfirmButton: false
             });
+
+            setTimeout(() => {
+                $.ajax({
+                    url: 'huy_don_hang.php',
+                    type: 'POST',
+                    data: { orderId: orderId },
+                    success: function(response) {
+                        location.reload();
+                    },
+                    error: function() {
+                        Swal.fire({
+                            title: "Lỗi!",
+                            text: "Có lỗi xảy ra khi hủy đơn hàng",
+                            icon: "error"
+                        });
+                    }
+                });
+            }, 1500);
         }
-    }
+    });
+}
     </script>
 
 <style>
@@ -529,7 +554,7 @@ function getStatusClass($status) {
         case 'Đã hủy': return 'badge-cancelled';
         default: return 'badge-secondary';
     }
-}
+}   
 function getOrderProgress($status) {
     $stages = [
         'Chờ xác nhận' => 25,

@@ -1,16 +1,18 @@
 <?php
 if (!isset($_SESSION['admin_id'])) {
-    header('Location: login.php');
+    header('Location: ../login.php');
     exit;
 }
 
 $search = isset($_GET['search']) ? $_GET['search'] : '';
 $staffs = $connect->getAllStaff($search);
 ?>
+
 <!DOCTYPE html>
 <head>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="../js/jquery3.2.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -23,7 +25,7 @@ $staffs = $connect->getAllStaff($search);
     <div class="card mb-4">
         <div class="card-body">
             <form method="GET" class="row g-3">
-                <input type="hidden" name="page" value="staff">
+                <input type="hidden" name="page" value="nhanvien">
                 <div class="col-md-4">
                     <div class="input-group">
                         <input type="text" class="form-control" name="search" 
@@ -131,7 +133,7 @@ $staffs = $connect->getAllStaff($search);
 
 <!-- Edit Staff Modal -->
 <div class="modal fade" id="editStaffModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Chỉnh sửa nhân viên</h5>
@@ -151,6 +153,61 @@ $staffs = $connect->getAllStaff($search);
                     <div class="mb-3">
                         <label class="form-label">Mật khẩu mới (để trống nếu không đổi)</label>
                         <input type="password" class="form-control" name="matkhau">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Quyền truy cập</label>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="permissions[sanpham]" id="perm_sanpham">
+                                    <label class="form-check-label" for="perm_sanpham">Sản phẩm</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="permissions[danhmuc]" id="perm_danhmuc">
+                                    <label class="form-check-label" for="perm_danhmuc">Danh mục</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="permissions[loaimay]" id="perm_loaimay">
+                                    <label class="form-check-label" for="perm_loaimay">Loại máy</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="permissions[loaiday]" id="perm_loaiday">
+                                    <label class="form-check-label" for="perm_loaiday">Loại dây</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="permissions[nhacungcap]" id="perm_nhacungcap">
+                                    <label class="form-check-label" for="perm_nhacungcap">Nhà cung cấp</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="permissions[donhang]" id="perm_donhang">
+                                    <label class="form-check-label" for="perm_donhang">Đơn hàng</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="permissions[khachhang]" id="perm_khachhang">
+                                    <label class="form-check-label" for="perm_khachhang">Khách hàng</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="permissions[nhanvien]" id="perm_nhanvien">
+                                    <label class="form-check-label" for="perm_nhanvien">Nhân viên</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="permissions[danhgia]" id="perm_danhgia">
+                                    <label class="form-check-label" for="perm_danhgia">Đánh giá</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="permissions[tinnhan]" id="perm_tinnhan">
+                                    <label class="form-check-label" for="perm_tinnhan">Tin nhắn</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="permissions[baocao]" id="perm_baocao">
+                                    <label class="form-check-label" for="perm_baocao">Báo cáo</label>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -210,6 +267,32 @@ $('.edit-staff').click(function() {
                 form.find('[name="id"]').val(response.data.idnguoidung);
                 form.find('[name="tendangnhap"]').val(response.data.tendangnhap);
                 form.find('[name="email"]').val(response.data.email);
+
+                // Load permissions
+                $.ajax({
+                    url: 'nhanvien_update.php',
+                    type: 'POST',
+                    data: {
+                        action: 'get_permissions',
+                        id: staffId
+                    },
+                    success: function(permResponse) {
+                        if (permResponse.success) {
+                            const perms = permResponse.data;
+                            form.find('[name="permissions[sanpham]"]').prop('checked', perms.sanpham == 1);
+                            form.find('[name="permissions[danhmuc]"]').prop('checked', perms.danhmuc == 1);
+                            form.find('[name="permissions[loaimay]"]').prop('checked', perms.loaimay == 1);
+                            form.find('[name="permissions[loaiday]"]').prop('checked', perms.loaiday == 1);
+                            form.find('[name="permissions[nhacungcap]"]').prop('checked', perms.nhacungcap == 1);
+                            form.find('[name="permissions[donhang]"]').prop('checked', perms.donhang == 1);
+                            form.find('[name="permissions[khachhang]"]').prop('checked', perms.khachhang == 1);
+                            form.find('[name="permissions[nhanvien]"]').prop('checked', perms.nhanvien == 1);
+                            form.find('[name="permissions[danhgia]"]').prop('checked', perms.danhgia == 1);
+                            form.find('[name="permissions[tinnhan]"]').prop('checked', perms.tinnhan == 1);
+                            form.find('[name="permissions[baocao]"]').prop('checked', perms.baocao == 1);
+                        }
+                    }
+                });
             }
         }
     });
@@ -230,7 +313,7 @@ $('#saveStaffChanges').click(function() {
             if (response.success) {
                 Swal.fire({
                     title: 'Thành công!',
-                    text: 'Đã cập nhật thông tin nhân viên',
+                    text: 'Đã cập nhật thông tin và quyền nhân viên',
                     icon: 'success'
                 }).then(() => {
                     location.reload();

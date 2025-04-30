@@ -21,6 +21,7 @@ class connect {
                      AND (k.ngaybatdau IS NULL OR k.ngaybatdau <= CURRENT_TIMESTAMP)
                      AND s.trangthai = 1
                      AND s.ngaytao >= DATE_SUB(CURRENT_DATE(), INTERVAL 10 DAY)
+                     AND s.soluong > 0
                      ORDER BY s.ngaytao DESC
                      LIMIT :limit";
             
@@ -48,6 +49,7 @@ class connect {
                      AND s.trangthai = 1
                      AND (k.ngayketthuc IS NULL OR k.ngayketthuc >= CURRENT_TIMESTAMP)
                      AND (k.ngaybatdau IS NULL OR k.ngaybatdau <= CURRENT_TIMESTAMP)
+
                      GROUP BY s.idsanpham
                      ORDER BY s.ngaytao DESC";
             $stmt = $this->conn->prepare($query);
@@ -62,7 +64,7 @@ class connect {
     public function getCategories() {  
         try {
             $query = "SELECT * FROM danhmuc 
-                    WHERE trangthai = 1";
+                    WHERE trangthai = 1" ;
             $stmt = $this->conn->prepare($query);
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -82,6 +84,7 @@ class connect {
                     LEFT JOIN danhmuc d ON s.iddanhmuc = d.iddanhmuc
                     WHERE s.iddanhmuc = :categoryId 
                     AND s.trangthai = 1
+                    AND s.soluong > 0
                     GROUP BY s.idsanpham
                     ORDER BY s.ngaytao DESC";
             $stmt = $this->conn->prepare($query);
@@ -137,7 +140,7 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
                 LEFT JOIN loaiday ON s.loaiday = loaiday.id_loai_day
                 LEFT JOIN loaimay ON s.loaimay = loaimay.id_loai_may
                 LEFT JOIN khuyenmai k ON s.idkhuyenmai = k.idkhuyenmai
-                WHERE s.trangthai = 1";
+                WHERE s.trangthai = 1" AND s.soluong > 0;
         
         // Keyword search
         if (!empty($keyword)) {
@@ -366,6 +369,8 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
 
     public function cancelOrder($orderId, $userId) {
         try {
+            $this->conn->beginTransaction();
+    
             // Check if order belongs to user and is in cancellable state
             $query = "SELECT trangthai FROM donhang 
                     WHERE iddonhang = :orderId 
@@ -376,13 +381,40 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
             $stmt->execute([':orderId' => $orderId, ':userId' => $userId]);
             
             if ($stmt->rowCount() > 0) {
-                $updateQuery = "UPDATE donhang SET trangthai = 'Đã hủy' 
-                            WHERE iddonhang = :orderId";
-                $stmt = $this->conn->prepare($updateQuery);
-                return $stmt->execute([':orderId' => $orderId]);
+                // Get order details to restore product quantities
+                $detailsQuery = "SELECT idsanpham, soluong FROM chitietdonhang 
+                               WHERE iddonhang = :orderId";
+                $detailsStmt = $this->conn->prepare($detailsQuery);
+                $detailsStmt->execute([':orderId' => $orderId]);
+                $orderDetails = $detailsStmt->fetchAll(PDO::FETCH_ASSOC);
+    
+                // Update product quantities
+                $updateProductQuery = "UPDATE sanpham 
+                                     SET soluong = soluong + :soluong 
+                                     WHERE idsanpham = :idsanpham";
+                $updateProductStmt = $this->conn->prepare($updateProductQuery);
+    
+                foreach ($orderDetails as $detail) {
+                    $updateProductStmt->execute([
+                        ':soluong' => $detail['soluong'],
+                        ':idsanpham' => $detail['idsanpham']
+                    ]);
+                }
+    
+                // Update order status
+                $updateOrderQuery = "UPDATE donhang SET trangthai = 'Đã hủy' 
+                                   WHERE iddonhang = :orderId";
+                $updateOrderStmt = $this->conn->prepare($updateOrderQuery);
+                $updateOrderStmt->execute([':orderId' => $orderId]);
+    
+                $this->conn->commit();
+                return true;
             }
+    
+            $this->conn->rollBack();
             return false;
         } catch(PDOException $e) {
+            $this->conn->rollBack();
             error_log("Error canceling order: " . $e->getMessage());
             return false;
         }
@@ -1539,8 +1571,34 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
         }
     }
     
+    public function supplierNameExists($tenNhaCungCap, $excludeId = null) {
+        try {
+            $query = "SELECT COUNT(*) FROM nhacungcap WHERE tennhacungcap = :tennhacungcap";
+            if ($excludeId !== null) {
+                $query .= " AND idnhacungcap != :excludeId";
+            }
+            
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':tennhacungcap', $tenNhaCungCap);
+            if ($excludeId !== null) {
+                $stmt->bindParam(':excludeId', $excludeId);
+            }
+            $stmt->execute();
+            
+            return $stmt->fetchColumn() > 0;
+        } catch(PDOException $e) {
+            error_log("Error checking supplier name: " . $e->getMessage());
+            return false;
+        }
+    }
+    
     public function addSupplier($data) {
         try {
+            // Check if supplier name already exists
+            if ($this->supplierNameExists($data['tennhacungcap'])) {
+                throw new Exception("Tên nhà cung cấp đã tồn tại!");
+            }
+    
             $query = "INSERT INTO nhacungcap (tennhacungcap, diachi, sdt) 
                       VALUES (:tennhacungcap, :diachi, :sdt)";
             $stmt = $this->conn->prepare($query);
@@ -1548,14 +1606,19 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
             $stmt->bindParam(':diachi', $data['diachi']);
             $stmt->bindParam(':sdt', $data['sdt']);
             return $stmt->execute();
-        } catch(PDOException $e) {
+        } catch(Exception $e) {
             error_log("Error adding supplier: " . $e->getMessage());
-            return false;
+            throw $e;
         }
     }
     
     public function updateSupplier($data) {
         try {
+            // Check if supplier name already exists (excluding current supplier)
+            if ($this->supplierNameExists($data['tennhacungcap'], $data['idnhacungcap'])) {
+                throw new Exception("Tên nhà cung cấp đã tồn tại!");
+            }
+    
             $query = "UPDATE nhacungcap 
                       SET tennhacungcap = :tennhacungcap, 
                           diachi = :diachi, 
@@ -1567,9 +1630,9 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
             $stmt->bindParam(':diachi', $data['diachi']);
             $stmt->bindParam(':sdt', $data['sdt']);
             return $stmt->execute();
-        } catch(PDOException $e) {
+        } catch(Exception $e) {
             error_log("Error updating supplier: " . $e->getMessage());
-            return false;
+            throw $e;
         }
     }
     
@@ -1649,7 +1712,7 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
     
     public function getAllWatchTypesAdmin($search = '') {
         try {
-            $query = "SELECT * FROM loaimay";
+            $query = "SELECT * FROM loaimay WHERE 1=1"; // Changed this line
             $params = [];
     
             if (!empty($search)) {
@@ -1661,7 +1724,6 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
             
             $stmt = $this->conn->prepare($query);
             
-            // Bind search parameter if it exists
             if (!empty($params)) {
                 foreach ($params as $key => $value) {
                     $stmt->bindValue($key, $value);
@@ -1672,6 +1734,22 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch(PDOException $e) {
             error_log("Error getting watch types: " . $e->getMessage());
+            return [];
+        }
+    }
+    public function getMonthlyReports($month, $year) {
+        try {
+            $query = "SELECT * FROM baocao 
+                      WHERE MONTH(ngaytao) = :month 
+                      AND YEAR(ngaytao) = :year 
+                      ORDER BY ngaytao DESC";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':month', $month, PDO::PARAM_INT);
+            $stmt->bindParam(':year', $year, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            error_log("Error getting monthly reports: " . $e->getMessage());
             return [];
         }
     }
@@ -1847,9 +1925,34 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
         }
     }
 
-    //thêm loại máy
+    public function watchTypeExists($tenLoaiMay, $excludeId = null) {
+        try {
+            $query = "SELECT COUNT(*) FROM loaimay WHERE ten_loai_may = :ten_loai_may";
+            if ($excludeId !== null) {
+                $query .= " AND id_loai_may != :excludeId";
+            }
+            
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':ten_loai_may', $tenLoaiMay);
+            if ($excludeId !== null) {
+                $stmt->bindParam(':excludeId', $excludeId);
+            }
+            $stmt->execute();
+            
+            return $stmt->fetchColumn() > 0;
+        } catch(PDOException $e) {
+            error_log("Error checking watch type existence: " . $e->getMessage());
+            return false;
+        }
+    }
+    
     public function addWatchType($data) {
         try {
+            // Check if watch type name already exists
+            if ($this->watchTypeExists($data['ten_loai_may'])) {
+                throw new Exception("Tên loại máy đã tồn tại!");
+            }
+    
             $query = "INSERT INTO loaimay (ten_loai_may, mo_ta_loai_may, trangthai) 
                       VALUES (:ten_loai_may, :mo_ta_loai_may, :trangthai)";
             $stmt = $this->conn->prepare($query);
@@ -1857,14 +1960,19 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
             $stmt->bindParam(':mo_ta_loai_may', $data['mo_ta_loai_may']);
             $stmt->bindParam(':trangthai', $data['trangthai']);
             return $stmt->execute();
-        } catch(PDOException $e) {
+        } catch(Exception $e) {
             error_log("Error adding watch type: " . $e->getMessage());
-            return false;
+            throw $e;
         }
     }
     
     public function updateWatchType($data) {
         try {
+            // Check if watch type name already exists (excluding current watch type)
+            if ($this->watchTypeExists($data['ten_loai_may'], $data['id_loai_may'])) {
+                throw new Exception("Tên loại máy đã tồn tại!");
+            }
+    
             $query = "UPDATE loaimay 
                       SET ten_loai_may = :ten_loai_may, 
                           mo_ta_loai_may = :mo_ta_loai_may, 
@@ -1876,9 +1984,9 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
             $stmt->bindParam(':mo_ta_loai_may', $data['mo_ta_loai_may']);
             $stmt->bindParam(':trangthai', $data['trangthai']);
             return $stmt->execute();
-        } catch(PDOException $e) {
+        } catch(Exception $e) {
             error_log("Error updating watch type: " . $e->getMessage());
-            return false;
+            throw $e;
         }
     }
 
@@ -1929,8 +2037,34 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
     }
 
 
+    public function strapTypeExists($tenLoaiDay, $excludeId = null) {
+        try {
+            $query = "SELECT COUNT(*) FROM loaiday WHERE ten_loai_day = :ten_loai_day";
+            if ($excludeId !== null) {
+                $query .= " AND id_loai_day != :excludeId";
+            }
+            
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':ten_loai_day', $tenLoaiDay);
+            if ($excludeId !== null) {
+                $stmt->bindParam(':excludeId', $excludeId);
+            }
+            $stmt->execute();
+            
+            return $stmt->fetchColumn() > 0;
+        } catch(PDOException $e) {
+            error_log("Error checking strap type existence: " . $e->getMessage());
+            return false;
+        }
+    }
+    
     public function addStrapType($data) {
         try {
+            // Check if strap type name already exists
+            if ($this->strapTypeExists($data['ten_loai_day'])) {
+                throw new Exception("Tên loại dây đã tồn tại!");
+            }
+    
             $query = "INSERT INTO loaiday (ten_loai_day, mo_ta_loai_day, trangthai) 
                       VALUES (:ten_loai_day, :mo_ta_loai_day, :trangthai)";
             $stmt = $this->conn->prepare($query);
@@ -1938,14 +2072,19 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
             $stmt->bindParam(':mo_ta_loai_day', $data['mo_ta_loai_day']);
             $stmt->bindParam(':trangthai', $data['trangthai']);
             return $stmt->execute();
-        } catch(PDOException $e) {
+        } catch(Exception $e) {
             error_log("Error adding strap type: " . $e->getMessage());
-            return false;
+            throw $e;
         }
     }
     
     public function updateStrapType($data) {
         try {
+            // Check if strap type name already exists (excluding current strap type)
+            if ($this->strapTypeExists($data['ten_loai_day'], $data['id_loai_day'])) {
+                throw new Exception("Tên loại dây đã tồn tại!");
+            }
+    
             $query = "UPDATE loaiday 
                       SET ten_loai_day = :ten_loai_day, 
                           mo_ta_loai_day = :mo_ta_loai_day, 
@@ -1957,9 +2096,9 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
             $stmt->bindParam(':mo_ta_loai_day', $data['mo_ta_loai_day']);
             $stmt->bindParam(':trangthai', $data['trangthai']);
             return $stmt->execute();
-        } catch(PDOException $e) {
+        } catch(Exception $e) {
             error_log("Error updating strap type: " . $e->getMessage());
-            return false;
+            throw $e;
         }
     }
     
@@ -2002,32 +2141,61 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
     }
     
     //thêm mới danh mục
+    public function categoryExists($tendanhmuc, $excludeId = null) {
+        try {
+            $query = "SELECT COUNT(*) FROM danhmuc WHERE tendanhmuc = :tendanhmuc";
+            if ($excludeId !== null) {
+                $query .= " AND iddanhmuc != :excludeId";
+            }
+            
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':tendanhmuc', $tendanhmuc);
+            if ($excludeId !== null) {
+                $stmt->bindParam(':excludeId', $excludeId);
+            }
+            $stmt->execute();
+            
+            return $stmt->fetchColumn() > 0;
+        } catch(PDOException $e) {
+            error_log("Error checking category existence: " . $e->getMessage());
+            return false;
+        }
+    }
+    
     public function addCategory($data) {
         try {
+            // Check if category name already exists
+            if ($this->categoryExists($data['tendanhmuc'])) {
+                throw new Exception("Tên danh mục đã tồn tại!");
+            }
+    
             $query = "INSERT INTO danhmuc (tendanhmuc, trangthai) VALUES (:tendanhmuc, :trangthai)";
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':tendanhmuc', $data['tendanhmuc']);
             $stmt->bindParam(':trangthai', $data['trangthai']);
             return $stmt->execute();
-        } catch(PDOException $e) {
+        } catch(Exception $e) {
             error_log("Error adding category: " . $e->getMessage());
-            return false;
+            throw $e;
         }
     }
     
-
-    // cập nhật danh mục
     public function updateCategory($data) {
         try {
+            // Check if category name already exists (excluding current category)
+            if ($this->categoryExists($data['tendanhmuc'], $data['iddanhmuc'])) {
+                throw new Exception("Tên danh mục đã tồn tại!");
+            }
+    
             $query = "UPDATE danhmuc SET tendanhmuc = :tendanhmuc, trangthai = :trangthai WHERE iddanhmuc = :iddanhmuc";
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':iddanhmuc', $data['iddanhmuc']);
             $stmt->bindParam(':tendanhmuc', $data['tendanhmuc']);
             $stmt->bindParam(':trangthai', $data['trangthai']);
             return $stmt->execute();
-        } catch(PDOException $e) {
+        } catch(Exception $e) {
             error_log("Error updating category: " . $e->getMessage());
-            return false;
+            throw $e;
         }
     }
     
@@ -2313,7 +2481,9 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
 
     public function getAllStaff($search = '') {
         try {
-            $query = "SELECT * FROM nguoidung WHERE role = 1";
+            $query = "SELECT idnguoidung, tendangnhap, email, ngaytao, trangthai 
+                     FROM nguoidung 
+                     WHERE role = 1";
             if (!empty($search)) {
                 $query .= " AND (tendangnhap LIKE :search OR email LIKE :search)";
             }
@@ -2321,29 +2491,47 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
             
             $stmt = $this->conn->prepare($query);
             if (!empty($search)) {
-                $searchTerm = "%$search%";
-                $stmt->bindParam(':search', $searchTerm);
+                $searchParam = "%$search%";
+                $stmt->bindParam(':search', $searchParam);
             }
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch(PDOException $e) {
-            error_log("Error getting staff: " . $e->getMessage());
+            error_log("Error getting all staff: " . $e->getMessage());
             return [];
         }
     }
     
     public function addStaff($username, $email, $password) {
         try {
-            $query = "INSERT INTO nguoidung (tendangnhap, email, matkhau, role, trangthai) 
-                     VALUES (:username, :email, :password, 1, 1)";
+            $query = "INSERT INTO nguoidung (tendangnhap, email, matkhau, role, trangthai, sdt, cccd) 
+                     VALUES (:username, :email, :password, 1, 1, '', '')";
             $stmt = $this->conn->prepare($query);
-            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+            $hashedPassword = md5($password, PASSWORD_DEFAULT);
             $stmt->bindParam(':username', $username);
             $stmt->bindParam(':email', $email);
             $stmt->bindParam(':password', $hashedPassword);
-            return $stmt->execute();
+            if ($stmt->execute()) {
+                $userId = $this->conn->lastInsertId();
+                // Thêm quyền mặc định vào bảng quyentruycap
+                $this->addDefaultPermissions($userId);
+                return true;
+            }
+            return false;
         } catch(PDOException $e) {
             error_log("Error adding staff: " . $e->getMessage());
+            return false;
+        }
+    }
+    public function addDefaultPermissions($userId) {
+        try {
+            $query = "INSERT INTO quyentruycap (idnguoidung, sanpham, danhmuc, loaimay, loaiday, nhacungcap, donhang, khachhang, nhanvien, danhgia, tinnhan, baocao) 
+                     VALUES (:idnguoidung, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':idnguoidung', $userId);
+            return $stmt->execute();
+        } catch(PDOException $e) {
+            error_log("Error adding default permissions: " . $e->getMessage());
             return false;
         }
     }
@@ -2372,7 +2560,31 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
             return false;
         }
     }
-    
+    public function getPermissions($userId) {
+        try {
+            $query = "SELECT * FROM quyentruycap WHERE idnguoidung = :idnguoidung";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':idnguoidung', $userId);
+            $stmt->execute();
+            return $stmt->fetch(PDO::FETCH_ASSOC) ?: [
+                'sanpham' => 0,
+                'danhmuc' => 0,
+                'loaimay' => 0,
+                'loaiday' => 0,
+                'nhacungcap' => 0,
+                'donhang' => 0,
+                'khachhang' => 0,
+                'nhanvien' => 0,
+                'danhgia' => 0,
+                'tinnhan' => 0,
+                'baocao' => 0
+            ];
+        } catch(PDOException $e) {
+            error_log("Error getting permissions: " . $e->getMessage());
+            return [];
+        }
+    }
+
     public function getStaffById($id) {
         try {
             $query = "SELECT * FROM nguoidung WHERE idnguoidung = :id AND role = 1";
@@ -2383,6 +2595,48 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
         } catch(PDOException $e) {
             error_log("Error getting staff by ID: " . $e->getMessage());
             return null;
+        }
+    }
+    public function updatePermissions($userId, $permissions) {
+        try {
+            // Kiểm tra xem đã có quyền cho người dùng chưa
+            $query = "SELECT idquyen FROM quyentruycap WHERE idnguoidung = :idnguoidung";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':idnguoidung', $userId);
+            $stmt->execute();
+            $exists = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($exists) {
+                // Cập nhật quyền
+                $query = "UPDATE quyentruycap 
+                         SET sanpham = :sanpham, danhmuc = :danhmuc, loaimay = :loaimay, loaiday = :loaiday, 
+                             nhacungcap = :nhacungcap, donhang = :donhang, khachhang = :khachhang, 
+                             nhanvien = :nhanvien, danhgia = :danhgia, tinnhan = :tinnhan, baocao = :baocao 
+                         WHERE idnguoidung = :idnguoidung";
+            } else {
+                // Thêm mới quyền
+                $query = "INSERT INTO quyentruycap 
+                         (idnguoidung, sanpham, danhmuc, loaimay, loaiday, nhacungcap, donhang, khachhang, nhanvien, danhgia, tinnhan, baocao) 
+                         VALUES (:idnguoidung, :sanpham, :danhmuc, :loaimay, :loaiday, :nhacungcap, :donhang, :khachhang, :nhanvien, :danhgia, :tinnhan, :baocao)";
+            }
+
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':idnguoidung', $userId);
+            $stmt->bindParam(':sanpham', $permissions['sanpham'], PDO::PARAM_INT);
+            $stmt->bindParam(':danhmuc', $permissions['danhmuc'], PDO::PARAM_INT);
+            $stmt->bindParam(':loaimay', $permissions['loaimay'], PDO::PARAM_INT);
+            $stmt->bindParam(':loaiday', $permissions['loaiday'], PDO::PARAM_INT);
+            $stmt->bindParam(':nhacungcap', $permissions['nhacungcap'], PDO::PARAM_INT);
+            $stmt->bindParam(':donhang', $permissions['donhang'], PDO::PARAM_INT);
+            $stmt->bindParam(':khachhang', $permissions['khachhang'], PDO::PARAM_INT);
+            $stmt->bindParam(':nhanvien', $permissions['nhanvien'], PDO::PARAM_INT);
+            $stmt->bindParam(':danhgia', $permissions['danhgia'], PDO::PARAM_INT);
+            $stmt->bindParam(':tinnhan', $permissions['tinnhan'], PDO::PARAM_INT);
+            $stmt->bindParam(':baocao', $permissions['baocao'], PDO::PARAM_INT);
+            return $stmt->execute();
+        } catch(PDOException $e) {
+            error_log("Error updating permissions: " . $e->getMessage());
+            return false;
         }
     }
     

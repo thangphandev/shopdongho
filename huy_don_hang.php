@@ -9,10 +9,17 @@ if (!isset($_SESSION['user_id']) || !isset($_POST['orderId'])) {
     exit;
 }
 
-$connect = new Connect();
-$result = $connect->cancelOrder($_POST['orderId'], $_SESSION['user_id']);
-
-echo json_encode([
-    'success' => $result,
-    'message' => $result ? 'Đơn hàng đã được hủy' : 'Không thể hủy đơn hàng'
-]);
+try {
+    $connect = new Connect();
+    $result = $connect->cancelOrder($_POST['orderId'], $_SESSION['user_id']);
+    
+    echo json_encode([
+        'success' => $result,
+        'message' => $result ? 'Đơn hàng đã được hủy thành công' : 'Không thể hủy đơn hàng'
+    ]);
+} catch (Exception $e) {
+    echo json_encode([
+        'success' => false,
+        'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+    ]);
+}
