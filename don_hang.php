@@ -67,9 +67,7 @@ include 'header.php';
                                         <div class="step <?= getOrderProgress($order['trangthai']) >= 40 ? 'active' : '' ?>">
                                             <div class="step-label">Đã xác nhận</div>
                                         </div>
-                                        <div class="step <?= getOrderProgress($order['trangthai']) >= 60 ? 'active' : '' ?>">
-                                            <div class="step-label">Chuẩn bị đơn</div>
-                                        </div>
+                                        
                                         <div class="step <?= getOrderProgress($order['trangthai']) >= 80 ? 'active' : '' ?>">
                                             <div class="step-label">Đang vận chuyển</div>
                                         </div>
@@ -525,7 +523,7 @@ function getStatusClass($status) {
     switch ($status) {
         case 'Chờ xác nhận': return 'badge-pending';
         case 'Đã xác nhận': return 'badge-confirmed';
-        case 'Chuẩn bị đơn': return 'badge-preparing';
+        
         case 'Đang vận chuyển': return 'badge-shipping';
         case 'Hoàn thành': return 'badge-completed';
         case 'Đã hủy': return 'badge-cancelled';
@@ -534,10 +532,10 @@ function getStatusClass($status) {
 }
 function getOrderProgress($status) {
     $stages = [
-        'Chờ xác nhận' => 20,
-        'Đã xác nhận' => 40,
-        'Chuẩn bị đơn' => 60,
-        'Đang vận chuyển' => 80,
+        'Chờ xác nhận' => 25,
+        'Đã xác nhận' => 50,
+        
+        'Đang vận chuyển' => 75,
         'Hoàn thành' => 100,
         'Đã hủy' => 0
     ];
