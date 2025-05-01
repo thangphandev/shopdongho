@@ -44,7 +44,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     'nhanvien' => isset($permissions['nhanvien']) ? 1 : 0,
                     'danhgia' => isset($permissions['danhgia']) ? 1 : 0,
                     'tinnhan' => isset($permissions['tinnhan']) ? 1 : 0,
-                    'baocao' => isset($permissions['baocao']) ? 1 : 0
+                    'baocao' => isset($permissions['baocao']) ? 1 : 0,
+                    'khuyenmai' => isset($permissions['khuyenmai'])? 1 : 0
                 ];
                 $permResult = $connect->updatePermissions($_POST['id'], $permData);
 

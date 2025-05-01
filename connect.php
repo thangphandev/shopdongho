@@ -2700,13 +2700,13 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
                 $query = "UPDATE quyentruycap 
                          SET sanpham = :sanpham, danhmuc = :danhmuc, loaimay = :loaimay, loaiday = :loaiday, 
                              nhacungcap = :nhacungcap, donhang = :donhang, khachhang = :khachhang, 
-                             nhanvien = :nhanvien, danhgia = :danhgia, tinnhan = :tinnhan, baocao = :baocao 
+                             nhanvien = :nhanvien, danhgia = :danhgia, tinnhan = :tinnhan, baocao = :baocao, khuyenmai = :khuyenmai
                          WHERE idnguoidung = :idnguoidung";
             } else {
                 // Thêm mới quyền
                 $query = "INSERT INTO quyentruycap 
-                         (idnguoidung, sanpham, danhmuc, loaimay, loaiday, nhacungcap, donhang, khachhang, nhanvien, danhgia, tinnhan, baocao) 
-                         VALUES (:idnguoidung, :sanpham, :danhmuc, :loaimay, :loaiday, :nhacungcap, :donhang, :khachhang, :nhanvien, :danhgia, :tinnhan, :baocao)";
+                         (idnguoidung, sanpham, danhmuc, loaimay, loaiday, nhacungcap, donhang, khachhang, nhanvien, danhgia, tinnhan, baocao, khuyenmai) 
+                         VALUES (:idnguoidung, :sanpham, :danhmuc, :loaimay, :loaiday, :nhacungcap, :donhang, :khachhang, :nhanvien, :danhgia, :tinnhan, :baocao, :khuyenmai)";
             }
 
             $stmt = $this->conn->prepare($query);
@@ -2722,6 +2722,7 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
             $stmt->bindParam(':danhgia', $permissions['danhgia'], PDO::PARAM_INT);
             $stmt->bindParam(':tinnhan', $permissions['tinnhan'], PDO::PARAM_INT);
             $stmt->bindParam(':baocao', $permissions['baocao'], PDO::PARAM_INT);
+            $stmt->bindParam(':khuyenmai', $permissions['khuyenmai'], PDO::PARAM_INT);
             return $stmt->execute();
         } catch(PDOException $e) {
             error_log("Error updating permissions: " . $e->getMessage());

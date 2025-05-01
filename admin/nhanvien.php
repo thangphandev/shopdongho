@@ -199,6 +199,10 @@ $staffs = $connect->getAllStaff($search);
                                     <label class="form-check-label" for="perm_danhgia">Đánh giá</label>
                                 </div>
                                 <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="permissions[khuyenmai]" id="perm_khuyenmai">
+                                    <label class="form-check-label" for="perm_khuyennmai">Khuyến mãi</label>
+                                </div>
+                                <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="permissions[tinnhan]" id="perm_tinnhan">
                                     <label class="form-check-label" for="perm_tinnhan">Tin nhắn</label>
                                 </div>
@@ -289,6 +293,7 @@ $('.edit-staff').click(function() {
                             form.find('[name="permissions[nhanvien]"]').prop('checked', perms.nhanvien == 1);
                             form.find('[name="permissions[danhgia]"]').prop('checked', perms.danhgia == 1);
                             form.find('[name="permissions[tinnhan]"]').prop('checked', perms.tinnhan == 1);
+                            form.find('[name="permissions[tinnhan]"]').prop('checked', perms.khuyenmai == 1);
                             form.find('[name="permissions[baocao]"]').prop('checked', perms.baocao == 1);
                         }
                     }
