@@ -107,19 +107,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                             </li>
                             <li class="menusp">
-                                <a href="san-pham" title="Thương hiệu" class="smooth">HÀNG CÓ SẴN</a>
+                                <a href="hang_co_san.php" title="Hàng có sẵn" class="smooth">HÀNG CÓ SẴN</a>
                             </li>
                             <li class="menusp">
-                                <a href="san-pham" title="Thương hiệu" class="smooth">REIEW</a>
+                                <a href="hang_moi.php" title="Hàng mới" class="smooth">HÀNG MỚI</a>
                                 <!-- Menu động có thể thêm từ PHP -->
                             </li>
                             <li class="menusp">
-                                <a href="san-pham" title="Thương hiệu" class="smooth">TƯ VẤN</a>
+                                <a href="san-pham" title="Chính sách của shop" class="smooth">CHÍNH SÁCH</a>
                                 <!-- Menu động có thể thêm từ PHP -->
                             </li>
                             
                             <li class="menusp">
-                                <a href="san-pham" title="Thương hiệu" class="smooth">GIỚI THIỆU</a> <!-- Menu động có thể thêm từ PHP -->
+                                <a href="san-pham" title="Giới thiệu" class="smooth">GIỚI THIỆU</a> <!-- Menu động có thể thêm từ PHP -->
                             </li>
                             <li class="menusp">
                                 <a href="chat.php" title="Nhắn tin với shop" class="smooth">NHẮN TIN</a>
@@ -149,7 +149,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <i class="fa fa-user"></i>
                                 </button>
                                 <div class="dropdown-content">
-                                    <a href="thong-tin-ca-nhan"><i class="fa fa-user-circle"></i> Thông tin cá nhân</a>
+                                    <a href="thong_tin_ca_nhan.php"><i class="fa fa-user-circle"></i> Thông tin cá nhân</a>
                                     <a href="don_hang.php"><i class="fa fa-box"></i> Thông tin đơn hàng</a>
                                     <a href="logout.php">Đăng xuất <i class="fa fa-sign-out"></i></a>
                                 </div>

@@ -46,7 +46,7 @@ include 'header.php';
                     <div class="slider-caption">
                         <h2>Đồng Hồ Chính Hãng 100%</h2>
                         <p>Cam kết về chất lượng và nguồn gốc xuất xứ rõ ràng</p>
-                        <a href="san-pham-co-san" class="btn-slider">Xem bộ sưu tập</a>
+                        <a href="hang_co_san.php" class="btn-slider">Xem bộ sưu tập</a>
                     </div>
                 </div>
                 <div class="item">
@@ -126,7 +126,7 @@ include 'header.php';
     <?php if (!empty($inStockProducts)): ?>
         <section class="h_pro_cate py-5 bgfixed rela lazy" data-src="images/anh-nen-richard-mille.jpg">
             <h2 class="main-title text-center mb-5 text-uppercase wow fadeInUp delay01">
-                <a href="https://localhost:8088/savewweb/san-pham-co-san" title="ĐỒNG HỒ CÓ SẴN" class="smooth hvf3">ĐỒNG HỒ CÓ SẴN</a>
+                <a href="hang_co_san.php" title="ĐỒNG HỒ CÓ SẴN" class="smooth hvf3">ĐỒNG HỒ CÓ SẴN</a>
             </h2>
             <div class="d_box_slider rela wow fadeInDown delay03">
                 <div class="container">
@@ -153,11 +153,17 @@ include 'header.php';
                                             class="smooth hvnau fs15"><?php echo htmlspecialchars($product['tensanpham']); ?></a>
                                     </h3>
                                     <?php if ($product['giaban'] > 0): ?>
-                                        <p class="clnau fs16"><?php echo number_format($product['giaban'], 0, ',', '.'); ?> VNĐ</p>
+                                        <?php if (!empty($product['gia_giam'])): ?>
+                                            <p class="clnau fs16 text-decoration-line-through"><?php echo number_format($product['giaban'], 0, ',', '.'); ?>đ</p>
+                                            <p class="clnau fs18 fw-bold"><?php echo number_format($product['giaban'] - $product['gia_giam'], 0, ',', '.'); ?>đ</p>
+                                        <?php else: ?>
+                                            <p class="clnau fs16"><?php echo number_format($product['giaban'], 0, ',', '.'); ?>đ</p>
+                                        <?php endif; ?>
                                     <?php else: ?>
                                         <p class="clnau fs16">Liên hệ</p>
                                     <?php endif; ?>
                                 </div>
+                                
                         <?php endforeach;
                         endif; ?>
                     </div>
@@ -199,7 +205,12 @@ include 'header.php';
                                             class="smooth hvnau fs15"><?php echo htmlspecialchars($product['tensanpham']); ?></a>
                                     </h3>
                                     <?php if ($product['giaban'] > 0): ?>
-                                        <p class="clnau fs16"><?php echo number_format($product['giaban'], 0, ',', '.'); ?> VNĐ</p>
+                                        <?php if (!empty($product['gia_giam'])): ?>
+                                            <p class="clnau fs16 text-decoration-line-through"><?php echo number_format($product['giaban'], 0, ',', '.'); ?>đ</p>
+                                            <p class="clnau fs18 fw-bold"><?php echo number_format($product['giaban'] - $product['gia_giam'], 0, ',', '.'); ?>đ</p>
+                                        <?php else: ?>
+                                            <p class="clnau fs16"><?php echo number_format($product['giaban'], 0, ',', '.'); ?>đ</p>
+                                        <?php endif; ?>
                                     <?php else: ?>
                                         <p class="clnau fs16">Liên hệ</p>
                                     <?php endif; ?>

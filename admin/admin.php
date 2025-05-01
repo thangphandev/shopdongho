@@ -29,7 +29,8 @@ $permissionPages = [
     'nhanvien' => 'nhanvien',
     'danhgia' => 'danhgia',
     'tinnhan' => 'tinnhan',
-    'thongke' => 'baocao'
+    'thongke' => 'baocao',
+    'khuyenmai' => 'khuyenmai',
 ];
 ?>
 
@@ -124,6 +125,13 @@ $permissionPages = [
                 case 'tinnhan':
                     if ($role == 2 || ($role == 1 && $permissions['tinnhan'] == 1)) {
                         include '../admin/tinnhan.php';
+                    } else {
+                        echo "<div class='alert alert-danger'>Bạn không có quyền truy cập!</div>";
+                    }
+                    break;
+                case 'khuyenmai':
+                    if ($role == 2 || ($role == 1 && $permissions['khuyenmai'] == 1)) {
+                        include '../admin/khuyenmai.php';
                     } else {
                         echo "<div class='alert alert-danger'>Bạn không có quyền truy cập!</div>";
                     }

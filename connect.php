@@ -36,7 +36,7 @@ class connect {
         }
     }
     
-    // Update getProductsByStock method similarly
+    // hàng có sẵn
     public function getProductsByStock() {
         try {
             $query = "SELECT DISTINCT s.*, 
@@ -140,9 +140,9 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
                 LEFT JOIN loaiday ON s.loaiday = loaiday.id_loai_day
                 LEFT JOIN loaimay ON s.loaimay = loaimay.id_loai_may
                 LEFT JOIN khuyenmai k ON s.idkhuyenmai = k.idkhuyenmai
-                WHERE s.trangthai = 1" AND s.soluong > 0;
+                WHERE s.trangthai = 1 AND s.soluong > 0";
         
-        // Keyword search
+       
         if (!empty($keyword)) {
             $conditions[] = "(s.tensanpham LIKE :keyword OR s.mota LIKE :keyword OR d.tendanhmuc LIKE :keyword)";
             $params[':keyword'] = "%$keyword%";
@@ -2113,6 +2113,95 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
             return false;
         }
     }
+    public function getAllPromotionsadmin($search = '') {
+        try {
+            $query = "SELECT * FROM khuyenmai WHERE 1=1";
+            $params = [];
+    
+            if (!empty($search)) {
+                $query .= " AND tenkhuyenmai LIKE :search";
+                $params[':search'] = "%$search%";
+            }
+    
+            $query .= " ORDER BY ngaytao DESC";
+            
+            $stmt = $this->conn->prepare($query);
+            
+            if (!empty($params)) {
+                foreach ($params as $key => $value) {
+                    $stmt->bindValue($key, $value);
+                }
+            }
+            
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            error_log("Error getting promotions: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function addPromotion($data) {
+        try {
+            $query = "INSERT INTO khuyenmai (tenkhuyenmai, gia_giam, ngaybatdau, ngayketthuc) 
+                      VALUES (:tenkhuyenmai, :gia_giam, :ngaybatdau, :ngayketthuc)";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':tenkhuyenmai', $data['tenkhuyenmai']);
+            $stmt->bindParam(':gia_giam', $data['gia_giam']);
+            $stmt->bindParam(':ngaybatdau', $data['ngaybatdau']);
+            $stmt->bindParam(':ngayketthuc', $data['ngayketthuc']);
+            return $stmt->execute();
+        } catch(PDOException $e) {
+            error_log("Error adding promotion: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function updatePromotion($data) {
+        try {
+            $query = "UPDATE khuyenmai 
+                      SET tenkhuyenmai = :tenkhuyenmai,
+                          gia_giam = :gia_giam,
+                          ngaybatdau = :ngaybatdau,
+                          ngayketthuc = :ngayketthuc
+                      WHERE idkhuyenmai = :idkhuyenmai";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':idkhuyenmai', $data['idkhuyenmai']);
+            $stmt->bindParam(':tenkhuyenmai', $data['tenkhuyenmai']);
+            $stmt->bindParam(':gia_giam', $data['gia_giam']);
+            $stmt->bindParam(':ngaybatdau', $data['ngaybatdau']);
+            $stmt->bindParam(':ngayketthuc', $data['ngayketthuc']);
+            return $stmt->execute();
+        } catch(PDOException $e) {
+            error_log("Error updating promotion: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function deletePromotion($id) {
+        try {
+            $query = "DELETE FROM khuyenmai WHERE idkhuyenmai = :idkhuyenmai";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':idkhuyenmai', $id);
+            return $stmt->execute();
+        } catch(PDOException $e) {
+            error_log("Error deleting promotion: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function getPromotionById($id) {
+        try {
+            $query = "SELECT * FROM khuyenmai WHERE idkhuyenmai = :idkhuyenmai";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':idkhuyenmai', $id);
+            $stmt->execute();
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            error_log("Error getting promotion: " . $e->getMessage());
+            return null;
+        }
+    }
 
     //lấy các khuyến mãi
     public function getAllPromotions() {
@@ -2759,6 +2848,58 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
         } catch(PDOException $e) {
             error_log("Error getting user: " . $e->getMessage());
             return null;
+        }
+    }
+    public function getTotalSpentByUser($userId) {
+        try {
+            $query = "SELECT SUM(tongtien) as total_spent 
+                      FROM donhang 
+                      WHERE idnguoidung = :userId AND trangthai = 'Hoàn thành'";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+            $stmt->execute();
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result['total_spent'] ?? 0;
+        } catch(PDOException $e) {
+            error_log("Error in getTotalSpentByUser: " . $e->getMessage());
+            return 0;
+        }
+    }
+
+    public function verifyUserPassword($userId, $currentPassword) {
+        try {
+            $query = "SELECT matkhau FROM nguoidung WHERE idnguoidung = :userId";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+            $stmt->execute();
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            // Compare using MD5 hash
+            if ($user && md5($currentPassword) === $user['matkhau']) {
+                return true;
+            }
+            return false;
+        } catch(PDOException $e) {
+            error_log("Error in verifyUserPassword: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    // Xác minh mật khẩu hiện tại của người dùng
+    
+    
+    // Cập nhật mật khẩu người dùng
+    public function updateUserPassword($userId, $newPassword) {
+        try {
+            $hashedPassword = md5($newPassword); // Chỉ cần truyền $newPassword
+            $query = "UPDATE nguoidung SET matkhau = :password WHERE idnguoidung = :userId";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':password', $hashedPassword);
+            $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+            return $stmt->execute();
+        } catch(PDOException $e) {
+            error_log("Error in updateUserPassword: " . $e->getMessage());
+            return false;
         }
     }
 

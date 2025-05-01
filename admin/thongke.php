@@ -58,6 +58,7 @@ $currentMonthData = $connect->getRevenueAndProfit($selectedMonth, $selectedYear)
             padding: 15px;
             border-radius: 5px;
         }
+        
     </style>
 </head>
 <body>
