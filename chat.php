@@ -277,6 +277,62 @@ include 'header.php';
     animation: 1s blink infinite 0.9999s;
 }
 
+.addtocart-btn {
+    margin-top: 12px;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    font-size: 14px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: background-color 0.3s ease;
+}
+
+.addtocart-btn:hover {
+    background-color: #0056b3;
+}
+
+
+.product-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.product-card {
+    width: 240px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    padding: 15px;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.product-card a {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    width: 100%;
+}
+.product-name {
+    margin-top: 10px;
+    font-weight: bold;
+    font-size: 16px;
+}
+.product-image {
+    width: 100%;
+    height: 200px; /* Chiều cao cố định */
+    object-fit: cover; /* Giữ tỉ lệ, cắt bớt nếu cần để vừa khung */
+    border-radius: 5px;
+    background-color: #f9f9f9; /* màu nền phòng khi ảnh quá nhỏ */
+}
+
 @keyframes blink {
     50% {
         opacity: 1;
@@ -410,6 +466,58 @@ $(document).ready(function() {
         }
     });
 });
-</script>
+function addToCart(productId) {
+    const quantity = 1;
 
-<?php include 'footer.php'; ?>
+    $.ajax({
+        url: 'update_gio_hang.php',
+        type: 'POST',
+        data: {
+            product_id: productId,
+            quantity: quantity,
+            action: 'add'
+        },
+        dataType: 'json', // Tell jQuery to parse the response as JSON
+        success: function(data) { // Now data is already a JavaScript object
+            if (data.success) {
+                // Update cart count immediately
+                $.ajax({
+                    url: 'lay_so_luong_san_pham.php',
+                    type: 'GET',
+                    dataType: 'json',
+                    cache: false,
+                    success: function(cartData) {
+                        // Update the cart count in the header
+                        $('.cart-count').text(cartData.count);
+                    },
+                    error: function(xhr, status, error) {
+                        console.error("Error fetching cart count:", error);
+                    }
+                });
+                
+                Swal.fire({
+                    position: "top-end",
+                    icon: "success",
+                    title: "Thêm sản phẩm thành công",
+                    showConfirmButton: false,
+                    timer: 1200
+                });
+            } else {
+                Swal.fire({
+                    icon: "error",
+                    title: "Lỗi",
+                    text: data.message || 'Thêm vào giỏ hàng thất bại'
+                });
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error("Error adding to cart:", error);
+            Swal.fire({
+                icon: "error",
+                title: "Lỗi",
+                text: "Đã xảy ra lỗi khi thêm sản phẩm vào giỏ hàng"
+            });
+        }
+    });
+}
+</script>

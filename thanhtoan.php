@@ -103,13 +103,13 @@ include 'header.php';
                         </div>
                         <div class="form-group mb-3">
                             <label>Phường/Xã</label>
-                            <select class="form-control" id="ward" >
+                            <select class="form-control" id="ward" required>
                                 <option value="">Chọn Phường/Xã</option>
                             </select>
                         </div>
                         <div class="form-group mb-3">
                             <label>Địa chỉ cụ thể</label>
-                            <input type="text" class="form-control" name="address" placeholder="Địa chỉ cụ thể" required>
+                            <input type="text" class="form-control" name="address" placeholder="Số nhà, tên đường (VD: 73 Nguyễn Thị Minh Khai)" required>
                         </div>
                         <div class="form-group mb-4">
                             <label>Phương thức thanh toán</label>
@@ -174,123 +174,253 @@ include 'header.php';
                         </div>
                         <div class="d-flex justify-content-between mb-2">
                             <span>Phí vận chuyển:</span>
-                            <span class="clnau">30.000đ</span>
+                            <span class="clnau" id="shipping-fee">0đ</span>
                         </div>
                         <div class="d-flex justify-content-between fs18 fw-bold mt-3">
                             <span>Tổng cộng:</span>
-                            <span class="clnau"><?= number_format($total + 30000, 0, ',', '.') ?>đ</span>
+                            <span class="clnau" id="total-amount"><?= number_format($total + 0, 0, ',', '.') ?>đ</span>
                         </div>                    
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-    <?php include 'footer.php'; ?>
+<?php include 'footer.php'; ?>
 </body>
-    
 
-    <script>
-        // Load provinces
-        fetch('https://provinces.open-api.vn/api/p/')
-            .then(response => response.json())
-            .then(data => {
-                const provinceSelect = document.getElementById('province');
-                data.forEach(province => {
-                    provinceSelect.innerHTML += `<option value="${province.code}">${province.name}</option>`;
-                });
-            });
+<script>
+// Shop coordinates (fixed)
+const shopCoords = {
+    lat: 10.250173,
+    lon: 105.957163
+};
 
-        // Load districts when province changes
-        document.getElementById('province').addEventListener('change', function() {
-            const provinceCode = this.value;
-            fetch(`https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`)
-                .then(response => response.json())
-                .then(data => {
-                    const districtSelect = document.getElementById('district');
-                    districtSelect.innerHTML = '<option value="">Chọn Quận/Huyện</option>';
-                    data.districts.forEach(district => {
-                        districtSelect.innerHTML += `<option value="${district.code}">${district.name}</option>`;
-                    });
-                });
-        });
+// Haversine formula to calculate distance between two points (in kilometers)
+function haversineDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Earth's radius in kilometers
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+}
 
-        
-       
+// Calculate shipping cost based on distance
+function calculateShippingCost(distance) {
+    const ratePerKm = 1000; // 10,000 VND/km
+    const minShippingFee = 10000; // Minimum fee
+    const shippingCost = Math.max(minShippingFee, Math.round(distance * ratePerKm / 1000) * 1000);
+    return shippingCost;
+}
 
-    // Remove the old payment method radio buttons toggle code
-    // Update PayPal button container styling
-    
+// Fetch coordinates from Nominatim API for customer address
+async function getCoordinates(address, level = 0) {
+    // Define address levels for fallback
+    const addressLevels = [
+        `${address.street}, ${address.ward}, ${address.district}, ${address.province}, Vietnam`, // Full address
+        `${address.ward}, ${address.district}, ${address.province}, Vietnam`, // Ward + District + Province
+        `${address.district}, ${address.province}, Vietnam`, // District + Province
+        `${address.province}, Vietnam` // Province only
+    ];
 
+    const query = encodeURIComponent(addressLevels[level]);
+    const url = `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1`;
+    console.log(`Trying address level ${level}:`, query); // Debug
 
-
-        // Load wards when district changes
-        // Load wards when district changes
-        document.getElementById('district').addEventListener('change', function() {
-            const districtCode = this.value;
-            if (!districtCode) {
-                const wardSelect = document.getElementById('ward');
-                wardSelect.innerHTML = '<option value="">Chọn Phường/Xã</option>';
-                return;
+    try {
+        const response = await fetch(url, {
+            headers: {
+                'User-Agent': 'CheckoutApp/1.0 (phanminhthang321@gmail.com)'
             }
-
-            const wardSelect = document.getElementById('ward');
-            wardSelect.innerHTML = '<option value="">Chọn Phường/Xã</option>';
-
-            // Ensure district code is valid before making API call
-            const code = parseInt(districtCode);
-            if (isNaN(code)) {
-                console.error('Invalid district code:', districtCode);
-                return;
-            }
-
-            fetch(`https://provinces.open-api.vn/api/d/${code}?depth=2`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data && data.wards && Array.isArray(data.wards)) {
-                        data.wards.forEach(ward => {
-                            const option = new Option(ward.name, ward.code);
-                            wardSelect.add(option);
-                        });
-                    } else {
-                        throw new Error('Invalid ward data format');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error loading wards:', error);
-                    wardSelect.innerHTML = '<option value="">Không thể tải danh sách phường/xã</option>';
-                    
-                    Swal.fire({
-                        title: "Lỗi!",
-                        text: "Không thể tải danh sách phường/xã. Vui lòng thử lại sau.",
-                        icon: "error"
-                    });
-                });
         });
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        const data = await response.json();
+        if (data && data.length > 0) {
+            const coords = {
+                lat: parseFloat(data[0].lat),
+                lon: parseFloat(data[0].lon)
+            };
+            return coords;
+        }
 
-        // Toggle payment methods
-        document.querySelectorAll('input[name="payment_method"]').forEach(input => {
-            input.addEventListener('change', function() {
-                const paypalContainer = document.getElementById('paypal-button-container');
-                const orderButton = document.querySelector('.btn-thanhtoan');
-                if (this.value === 'paypal') {
-                    paypalContainer.style.display = 'block';
-                    orderButton.style.display = 'none';
-                } else {
-                    paypalContainer.style.display = 'none';
-                    orderButton.style.display = 'block';
-                }
+        // If no coordinates found and more levels to try
+        if (level < addressLevels.length - 1) {
+            return await getCoordinates(address, level + 1); // Try next level
+        }
+
+        // If all levels fail
+        throw new Error('Không tìm thấy tọa độ sau tất cả các cấp');
+    } catch (error) {
+        console.error(`Lỗi khi lấy tọa độ tại cấp ${level}:`, error.message);
+        // If last level, rethrow error
+        if (level >= addressLevels.length - 1) {
+            throw error;
+        }
+        // Try next level
+        return await getCoordinates(address, level + 1);
+    }
+}
+
+// Update shipping fee and total amount
+function updateOrderSummary(shippingFee) {
+    const total = <?= $total ?> + shippingFee;
+    document.getElementById('shipping-fee').textContent = `${shippingFee.toLocaleString('vi-VN')}đ`;
+    document.getElementById('total-amount').textContent = `${total.toLocaleString('vi-VN')}đ`;
+}
+
+// Load provinces
+fetch('https://provinces.open-api.vn/api/p/')
+    .then(response => response.json())
+    .then(data => {
+        const provinceSelect = document.getElementById('province');
+        data.forEach(province => {
+            provinceSelect.innerHTML += `<option value="${province.code}">${province.name}</option>`;
+        });
+    })
+    .catch(error => {
+        console.error('Error loading provinces:', error);
+        Swal.fire({
+            title: "Lỗi!",
+            text: "Không thể tải danh sách tỉnh/thành phố.",
+            icon: "error"
+        });
+    });
+
+// Load districts when province changes
+document.getElementById('province').addEventListener('change', function() {
+    const provinceCode = this.value;
+    if (!provinceCode) {
+        document.getElementById('district').innerHTML = '<option value="">Chọn Quận/Huyện</option>';
+        document.getElementById('ward').innerHTML = '<option value="">Chọn Phường/Xã</option>';
+        return;
+    }
+    fetch(`https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`)
+        .then(response => response.json())
+        .then(data => {
+            const districtSelect = document.getElementById('district');
+            districtSelect.innerHTML = '<option value="">Chọn Quận/Huyện</option>';
+            data.districts.forEach(district => {
+                districtSelect.innerHTML += `<option value="${district.code}">${district.name}</option>`;
+            });
+            document.getElementById('ward').innerHTML = '<option value="">Chọn Phường/Xã</option>';
+        })
+        .catch(error => {
+            console.error('Error loading districts:', error);
+            Swal.fire({
+                title: "Lỗi!",
+                text: "Không thể tải danh sách quận/huyện.",
+                icon: "error"
             });
         });
+});
 
-        // PayPal integration
-       
+// Load wards when district changes
+document.getElementById('district').addEventListener('change', function() {
+    const districtCode = this.value;
+    if (!districtCode) {
+        const wardSelect = document.getElementById('ward');
+        wardSelect.innerHTML = '<option value="">Chọn Phường/Xã</option>';
+        return;
+    }
 
-        function placeOrder(paymentMethod = 'cod') {
+    const wardSelect = document.getElementById('ward');
+    wardSelect.innerHTML = '<option value="">Chọn Phường/Xã</option>';
+
+    const code = parseInt(districtCode);
+    if (isNaN(code)) {
+        console.error('Invalid district code:', districtCode);
+        return;
+    }
+
+    fetch(`https://provinces.open-api.vn/api/d/${code}?depth=2`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data && data.wards && Array.isArray(data.wards)) {
+                data.wards.forEach(ward => {
+                    const option = new Option(ward.name, ward.code);
+                    wardSelect.add(option);
+                });
+            } else {
+                throw new Error('Invalid ward data format');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading wards:', error);
+            wardSelect.innerHTML = '<option value="">Không thể tải danh sách phường/xã</option>';
+            Swal.fire({
+                title: "Lỗi!",
+                text: "Không thể tải danh sách phường/xã. Vui lòng thử lại sau.",
+                icon: "error"
+            });
+        });
+});
+
+// Calculate distance and shipping cost when ward changes
+document.getElementById('ward').addEventListener('change', async function() {
+    const wardCode = this.value;
+    if (!wardCode) {
+        console.log('No ward selected, using default shipping fee');
+        updateOrderSummary(50000); // Default shipping fee: 50,000 VND
+        return;
+    }
+
+    const provinceSelect = document.getElementById('province');
+    const districtSelect = document.getElementById('district');
+    const addressInput = document.querySelector('input[name="address"]');
+
+    const customerAddress = {
+        province: provinceSelect.options[provinceSelect.selectedIndex]?.text || '',
+        district: districtSelect.options[districtSelect.selectedIndex]?.text || '',
+        ward: this.options[this.selectedIndex]?.text || '',
+        street: addressInput.value.trim() || ''
+    };
+
+    if (!customerAddress.province || !customerAddress.district || !customerAddress.ward) {
+        console.log('Incomplete address, using default shipping fee');
+        updateOrderSummary(50000); // Default shipping fee: 50,000 VND
+        Swal.fire({
+            title: "Lỗi!",
+            text: "Vui lòng nhập đầy đủ tỉnh, quận, phường/xã và địa chỉ cụ thể (số nhà, tên đường, ví dụ: số nhà/ tên đường).",
+            icon: "error"
+        });
+        return;
+    }
+
+    try {
+        const customerCoords = await getCoordinates(customerAddress);
+        if (customerCoords) {
+            const distance = haversineDistance(
+                customerCoords.lat, customerCoords.lon,
+                shopCoords.lat, shopCoords.lon
+            );
+            console.log('Calculated distance:', distance.toFixed(2), 'km');
+            const shippingFee = calculateShippingCost(distance);
+            updateOrderSummary(shippingFee);
+        } else {
+            throw new Error('Không tìm thấy tọa độ khách hàng');
+        }
+    } catch (error) {
+        console.error('Error calculating distance:', error.message);
+        updateOrderSummary(50000); // Default shipping fee: 50,000 VND
+        Swal.fire({
+            title: "Lỗi!",
+            text: `Không thể tính phí vận chuyển: ${error.message}. Sử dụng phí mặc định 50,000đ.`,
+            icon: "error"
+        });
+    }
+});
+
+function placeOrder(paymentMethod = 'cod') {
     // Validate form
     const form = document.getElementById('checkoutForm');
     const formData = new FormData(form);
@@ -301,8 +431,8 @@ include 'header.php';
     // Validate form fields
     if (!form.checkValidity() || !province.value || !district.value || !ward.value) {
         Swal.fire({
-            title: "Error!",
-            text: "Please fill in all required fields",
+            title: "Lỗi!",
+            text: "Vui lòng điền đầy đủ thông tin giao hàng",
             icon: "error"
         });
         return;
@@ -311,13 +441,17 @@ include 'header.php';
     // Create full address
     const fullAddress = `${formData.get('address')}, ${ward.options[ward.selectedIndex].text}, ${district.options[district.selectedIndex].text}, ${province.options[province.selectedIndex].text}`;
 
+    // Get shipping fee from UI
+    const shippingFeeText = document.getElementById('shipping-fee').textContent.replace(/[^0-9]/g, '');
+    const shippingFee = parseInt(shippingFeeText) || 50000;
+
     // Prepare order data
     const orderData = {
         fullname: formData.get('fullname'),
         phone: formData.get('phone'),
         address: fullAddress,
         payment_method: paymentMethod,
-        total_amount: <?= $total + 30000 ?>,
+        total_amount: <?= $total ?> + shippingFee,
         type: '<?= $_GET['type'] ?>',
         items: '<?= isset($_GET['productId']) ? $_GET['productId'] . "_" . ($_GET['quantity'] ?? 1) : ($_GET['items'] ?? "") ?>',
         payment_details: null
@@ -355,14 +489,14 @@ include 'header.php';
     .catch(error => {
         console.error('Error:', error);
         Swal.fire({
-            title: "Error!",
-            text: error.message || "An error occurred while processing the order",
+            title: "Lỗi!",
+            text: error.message || "Có lỗi xảy ra khi tạo đơn hàng",
             icon: "error"
         });
     });
 }
 
-        document.getElementById('paypal-button').addEventListener('click', function() {
+document.getElementById('paypal-button').addEventListener('click', function() {
     const paypalContainer = document.getElementById('paypal-button-container');
     if (paypalContainer.style.display === 'none') {
         // Form validation
@@ -383,10 +517,14 @@ include 'header.php';
 
         paypalContainer.style.display = 'block';
         
+        // Get shipping fee from UI
+        const shippingFeeText = document.getElementById('shipping-fee').textContent.replace(/[^0-9]/g, '');
+        const shippingFee = parseInt(shippingFeeText) || 50000;
+
         // Initialize PayPal button
         paypal.Buttons({
             createOrder: function(data, actions) {
-                const amount = (<?= $total + 30000 ?> / 25000).toFixed(2); // Convert VND to USD
+                const amount = ((<?= $total ?> + shippingFee) / 25000).toFixed(2); // Convert VND to USD
                 return actions.order.create({
                     purchase_units: [{
                         amount: {
@@ -406,7 +544,7 @@ include 'header.php';
                         address: fullAddress,
                         payment_method: 'paypal',
                         payment_details: JSON.stringify(details),
-                        total_amount: <?= $total + 30000 ?>,
+                        total_amount: <?= $total ?> + shippingFee,
                         type: '<?= $_GET['type'] ?>',
                         items: '<?= isset($_GET['productId']) ? $_GET['productId'] . "_" . ($_GET['quantity'] ?? 1) : ($_GET['items'] ?? "") ?>'
                     };
@@ -443,86 +581,70 @@ include 'header.php';
             onError: function(err) {
                 console.error('PayPal Error:', err);
                 Swal.fire({
-                    title: "Thành công!",
-                    text: "Đặt hàng thành công!",
-                    icon: "success"
-                }).then(() => {
-                                window.location.href = 'index.php';
-                            });
+                    title: "Lỗi!",
+                    text: "Có lỗi xảy ra khi thanh toán qua PayPal",
+                    icon: "error"
+                });
             }
         }).render('#paypal-button-container');
     } else {
         paypalContainer.style.display = 'none';
     }
 });
-    </script>
+</script>
 
-    <style>
-        .text-decoration-line-through {
+<style>
+.text-decoration-line-through {
     text-decoration: line-through;
 }
-        body {
-        background-image: url('images/anh-nen-pp.jpg');
-        background-repeat: no-repeat;
-        /* background-position: center; */
-        /* min-height: 100vh; */
-        
-    }
-    
-        footer {
-        width: 100% !important;
-        max-width: 100% !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-
-    footer .container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0 15px;
-    }
-
-        .checkout-form {
-            background:rgba(29, 29, 29, 0.59);
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.1);
-            margin-bottom:20px ;
-        }
-
-        .order-summary {
-            background:rgba(29, 29, 29, 0.59);
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.1);
-        }
-
-        .form-control {
-            height: 45px;
-            border: 1px solid #ebebeb;
-        }
-
-        .form-control:focus {
-            border-color: #dbaf56;
-            box-shadow: none;
-        }
-
-        .btn-thanhtoan {
-            height: 45px;
-            font-weight: 500;
-        }
-
-        .order-item {
-            border-bottom: 1px solid #ebebeb;
-            padding-bottom: 15px;
-        }
-
-        .payment-methods {
-            border: 1px solid #ebebeb;
-            padding: 15px;
-            border-radius: 5px;
-        }
-    </style>
-
-
+body {
+    background-image: url('images/anh-nen-pp.jpg');
+    background-repeat: no-repeat;
+}
+footer {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+footer .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 15px;
+}
+.checkout-form {
+    background: rgba(29, 29, 29, 0.59);
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+.order-summary {
+    background: rgba(29, 29, 29, 0.59);
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.1);
+}
+.form-control {
+    height: 45px;
+    border: 1px solid #ebebeb;
+}
+.form-control:focus {
+    border-color: #dbaf56;
+    box-shadow: none;
+}
+.btn-thanhtoan {
+    height: 45px;
+    font-weight: 500;
+}
+.order-item {
+    border-bottom: 1px solid #ebebeb;
+    padding-bottom: 15px;
+}
+.payment-methods {
+    border: 1px solid #ebebeb;
+    padding: 15px;
+    border-radius: 5px;
+}
+</style>
 </html>

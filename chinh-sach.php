@@ -20,6 +20,19 @@ try {
 
 include 'header.php';
 ?>
+<!DOCTYPE html>
+<html itemscope="" itemtype="http://schema.org/WebPage" lang="vi">
+<script src="js/jquery3.2.1.min.js" defer=""></script>
+    <script src="js/bootstrap.min.js" defer=""></script>
+    <script src="js/jquery.fancybox.min.js" defer=""></script>
+    <script src="js/toastr.min.js" defer=""></script>
+    <script src="js/social.js" defer=""></script>
+    <script src="js/lazyload.min.js" defer=""></script>
+    <script src="js/wow.js" defer=""></script>
+    <script src="js/tiny-slider.js" defer=""></script>
+    <script src="js/script.js" defer=""></script>
+    <script src="js/cart.js" defer=""></script>
+<body class="scrollstyle1">
 <section class="container py-1" data-src="images/anh-nen-pp.jpg" style="margin-top: 150px;">
     <div class="container">
         <div class="row">
@@ -62,6 +75,10 @@ include 'header.php';
         </div>
     </div>
 </section>
+<?php
+    // Include footer
+    include 'footer.php';
+    ?>
 <style>
     body {
         background-color: #121212;

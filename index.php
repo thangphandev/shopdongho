@@ -30,15 +30,15 @@ include 'header.php';
 
 <body class="scrollstyle1">
 
-    <section class="banner-slider wow fadeIn" data-wow-duration="2s">
+    <section class="py-5 banner-slider wow fadeIn" data-wow-duration="2s">
         <div class="slider-container">
-            <div class="tiny-slider" data-axis="horizontal" data-controls="true" data-slide_by="page" data-items="1" data-mouse_drag="true" data-autoplay="true" data-autoplay_button_output="false" data-speed="500" data-nav="true" data-lazyload="true">
+            <div class="tiny-slider" data-axis="horizontal" data-controls="true" data-slide_by="page" data-items="1" data-mouse_drag="true" data-autoplay="true" data-autoplay_button_output="false" data-speed="300" data-nav="true" data-lazyload="true">
                 <div class="item">
                     <img data-src="images/anh-slide-1.jpg" alt="Boss Luxury Watch Banner 1" class="img-responsive tns-lazy-img">
                     <div class="slider-caption">
                         <h2>Bộ Sưu Tập Đồng Hồ Cao Cấp</h2>
                         <p>Khám phá những mẫu đồng hồ đẳng cấp từ các thương hiệu hàng đầu thế giới</p>
-                        <!-- <a href="san-pham" class="btn-slider">Khám phá ngay</a> -->
+                        <a href="tim_kiem.php" class="btn-slider">Xem sản phẩm</a>
                     </div>
                 </div>
                 <div class="item">
@@ -46,7 +46,7 @@ include 'header.php';
                     <div class="slider-caption">
                         <h2>Đồng Hồ Chính Hãng 100%</h2>
                         <p>Cam kết về chất lượng và nguồn gốc xuất xứ rõ ràng</p>
-                        <!-- <a href="hang_co_san.php" class="btn-slider">Xem bộ sưu tập</a> -->
+                        <a href="tim_kiem.php" class="btn-slider">Xem sản phẩm</a>
                     </div>
                 </div>
                 <div class="item">
@@ -54,7 +54,7 @@ include 'header.php';
                     <div class="slider-caption">
                         <h2>Dịch Vụ Trao Đổi & Ký Gửi</h2>
                         <p>Giải pháp mua bán, trao đổi đồng hồ cao cấp uy tín hàng đầu Việt Nam</p>
-                      <!-- <a href="dich-vu" class="btn-slider">Tìm hiểu thêm</a> -->
+                        <a href="tim_kiem.php" class="btn-slider">Xem sản phẩm</a>
                     </div>
                 </div>
                 <div class="item">
@@ -62,7 +62,7 @@ include 'header.php';
                     <div class="slider-caption">
                         <h2>Bộ Sưu Tập Đồng Hồ Cao Cấp</h2>
                         <p>Khám phá những mẫu đồng hồ đẳng cấp từ các thương hiệu hàng đầu thế giới</p>
-                        <!-- <a href="san-pham" class="btn-slider">Khám phá ngay</a> -->
+                        <a href="tim_kiem.php" class="btn-slider">Xem sản phẩm</a>
                     </div>
                 </div>
                 <div class="item">
@@ -70,7 +70,7 @@ include 'header.php';
                     <div class="slider-caption">
                         <h2>Đồng Hồ Chính Hãng 100%</h2>
                         <p>Cam kết về chất lượng và nguồn gốc xuất xứ rõ ràng</p>
-                        <!-- <a href="san-pham-co-san" class="btn-slider">Xem bộ sưu tập</a> -->
+                        <a href="tim_kiem.php" class="btn-slider">Xem sản phẩm</a>
                     </div>
                 </div>
             </div>
@@ -80,7 +80,7 @@ include 'header.php';
     <!-- Phần sản phẩm có sẵn -->
     <section class="h_pro_cate py-5 bgfixed rela lazy" data-src="images/anh-nen-pp.jpg">
         <h2 class="main-title text-center mb-5 text-uppercase wow fadeInUp delay01">
-            <a href="https://localhost:8088/savewweb/san-pham-moi" title="ĐỒNG HỒ MỚI NHẤT" class="smooth hvf3">ĐỒNG HỒ MỚI NHẤT</a>
+            <a href="hang_moi.php" title="ĐỒNG HỒ MỚI NHẤT" class="smooth hvf3">ĐỒNG HỒ MỚI NHẤT</a>
         </h2>
         <div class="d_box_slider rela wow fadeInDown delay03">
             <div class="container">
@@ -177,7 +177,7 @@ include 'header.php';
     ?>
             <section class="h_pro_cate py-5 bgfixed rela lazy" data-src="images/anh-nen-richard-mille.jpg">
                 <h2 class="main-title text-center mb-5 text-uppercase wow fadeInUp delay01">
-                    <a href="danh-muc/<?php echo htmlspecialchars($category['iddanhmuc']); ?>"
+                    <a href="tim_kiem.php?brands[]=<?php echo htmlspecialchars($category['iddanhmuc']); ?>"
                         title="<?php echo htmlspecialchars($category['tendanhmuc']); ?>"
                         class="smooth hvf3"><?php echo htmlspecialchars($category['tendanhmuc']); ?></a>
                 </h2>

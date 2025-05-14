@@ -458,7 +458,7 @@ include 'header.php';
 
     .btn-continue {
         padding: 12px 25px;
-        background: #dbaf56;
+        background: #dbaf56cf;
         border: 2px solid #dbaf56;
         color: rgb(255, 255, 255);
         text-decoration: none;
@@ -468,7 +468,7 @@ include 'header.php';
     }
 
     .btn-continue:hover {
-        background: rgb(189, 152, 77);
+        background: rgb(253, 206, 111);
         color: #fff;
     }
 

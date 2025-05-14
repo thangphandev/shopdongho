@@ -40,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <header>
         <div class="container">
             <div class="d-flex flex-wrap justify-content-between align-items-center rela">
-                <a href="" title="Đồng Hồ Boss Luxury" alt="Đồng Hồ Boss Luxury" class="smooth logo d-inline-block">
+                <a href="index.php" title="Đồng Hồ Boss Luxury" alt="Đồng Hồ Boss Luxury" class="smooth logo d-inline-block">
                     <img src="images/2222.png" alt="" title="Đồng Hồ Boss Luxury" class="img-responsive">
                 </a>
                 <div class="h-menu">
@@ -126,7 +126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <a href="chat.php" title="Nhắn tin với shop" class="smooth">NHẮN TIN</a>
                             </li>
                             <!-- Rest of your menu items -->
-                            <button type="button" class="d_btn clnau d_seach_btn toggle_seach cspoint ml-2">
+                            <button type="button" class="d_btn clnau d_seach_btn smooth hvnau toggle_seach cspoint ml-2">
                                 <i class="fa fa-search"></i>
                             </button>
 
@@ -144,17 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     </span>
                                 <?php endif; ?>
                             </a>
-<!-- 
-                            <div class="user-dropdown">
-                                <button type="button" class="d_btn clnau bdnau fs20 cspoint d-inline-block text-center ml-2">
-                                    <i class="fa fa-user"></i>
-                                </button>
-                                <div class="dropdown-content">
-                                    <a href="thong_tin_ca_nhan.php"><i class="fa fa-user-circle"></i> Thông tin cá nhân</a>
-                                    <a href="don_hang.php"><i class="fa fa-box"></i> Thông tin đơn hàng</a>
-                                    <a href="logout.php">Đăng xuất <i class="fa fa-sign-out"></i></a>
-                                </div>
-                            </div> -->
+                           
                             <div class="user-dropdown">
                                 <button type="button" class="d_btn clnau bdnau fs20 cspoint d-inline-block text-center ml-2">
                                     <i class="fa fa-user"></i>

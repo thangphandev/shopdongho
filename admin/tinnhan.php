@@ -15,12 +15,13 @@ $selectedUser = $selectedUserId ? $connect->getUserById($selectedUserId) : null;
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý tin nhắn</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    
-</body>
-</html>
 <div class="container-fluid">
     <div class="row">
         <!-- User List Sidebar -->
@@ -52,35 +53,37 @@ $selectedUser = $selectedUserId ? $connect->getUserById($selectedUserId) : null;
         <div class="col-md-8 col-lg-9">
             <?php if ($selectedUserId && $selectedUser): ?>
                 <div class="card">
-                    <div class="card-header bg-primary text-white">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">Chat với <?php echo htmlspecialchars($selectedUser['tendangnhap']); ?></h5>
+                        <button type="button" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#productSuggestModal">
+                            <i class="fas fa-box"></i> Gợi ý sản phẩm
+                        </button>
                     </div>
                     <div class="card-body chat-body p-0">
                         <div class="chat-messages p-3" id="chatMessages">
-                        <?php foreach ($chatHistory as $message): ?>
-                            <div class="message <?php echo ($message['role'] == 0) ? 'user-message' : 'admin-message'; ?> mb-3">
-                                <div class="message-content">
-                                    <?php 
-                                    if (strpos($message['noidungchat'], '<div class="product-list"') !== false) {
-                                        // Fix image paths and product links
-                                        $content = preg_replace([
-                                            '/(src=")(imageproduct\/)/',
-                                            '/(href=")(chi_tiet_san_pham\.php\?id=)/'
-                                        ], [
-                                            '$1../$2',
-                                            '$1/saveweb/admin/admin.php?page=product_form&id='
-                                        ], $message['noidungchat']);
-                                        echo $content;
-                                    } else {
-                                        echo nl2br(htmlspecialchars($message['noidungchat']));
-                                    }
-                                    ?>
-                                    <div class="message-time text-muted small">
-                                        <?php echo date('d/m/Y H:i', strtotime($message['thoigian'])); ?>
+                            <?php foreach ($chatHistory as $message): ?>
+                                <div class="message <?php echo ($message['role'] == 0) ? 'user-message' : 'admin-message'; ?> mb-3">
+                                    <div class="message-content">
+                                        <?php 
+                                        if (strpos($message['noidungchat'], '<div class="product-list"') !== false) {
+                                            $content = preg_replace([
+                                                '/(src=")(imageproduct\/)/',
+                                                '/(href=")(chi_tiet_san_pham\.php\?id=)/'
+                                            ], [
+                                                '$1../$2',
+                                                '$1../$2'
+                                            ], $message['noidungchat']);
+                                            echo $content;
+                                        } else {
+                                            echo nl2br(htmlspecialchars($message['noidungchat']));
+                                        }
+                                        ?>
+                                        <div class="message-time text-muted small">
+                                            <?php echo date('d/m/Y H:i', strtotime($message['thoigian'])); ?>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        <?php endforeach; ?>
+                            <?php endforeach; ?>
                         </div>
                         <div class="chat-input p-3 border-top">
                             <form id="adminChatForm">
@@ -92,6 +95,30 @@ $selectedUser = $selectedUserId ? $connect->getUserById($selectedUserId) : null;
                                     </button>
                                 </div>
                             </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Product Suggest Modal -->
+                <div class="modal fade" id="productSuggestModal" tabindex="-1" aria-labelledby="productSuggestModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="productSuggestModalLabel">Gợi ý sản phẩm</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <input type="text" class="form-control" id="productSearchInput" placeholder="Tìm kiếm sản phẩm...">
+                                </div>
+                                <div id="productList" class="product-list-container" style="max-height: 400px; overflow-y: auto;">
+                                    <!-- Product list will be populated here -->
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                                <button type="button" class="btn btn-primary" id="sendProductButton">Gửi sản phẩm</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -168,62 +195,81 @@ $selectedUser = $selectedUserId ? $connect->getUserById($selectedUserId) : null;
     margin-bottom: 10px;
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
-    max-width: 600px;
+    gap: 20px;
 }
 
 .message-content .product-card {
-    flex: 0 1 calc(50% - 5px);
-    min-width: 200px;
-    background: white;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    padding: 8px;
-    text-decoration: none;
-    color: inherit;
+    width: 240px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    padding: 15px;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    background: #fff;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    transition: transform 0.2s, box-shadow 0.2s;
 }
 
-.message-content .product-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+.message-content .product-card a {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    width: 100%;
 }
 
 .message-content .product-image {
-    width: 60px;
-    height: 60px;
+    width: 100%;
+    height: 200px;
     object-fit: cover;
-    border-radius: 4px;
-    margin-right: 10px;
+    border-radius: 5px;
+    background-color: #f9f9f9;
 }
 
 .message-content .product-name {
+    margin-top: 10px;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.addtocart-btn {
+    margin-top: 12px;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
     font-size: 14px;
-    font-weight: 500;
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: background-color 0.3s ease;
 }
 
-/* Adjust message content for products */
-.message-content {
-    max-width: 85%;
+.addtocart-btn:hover {
+    background-color: #0056b3;
 }
 
-.shop-message .message-content,
-.admin-message .message-content {
-    background-color: white;
-    color: #333;
+.product-list-container .product-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.product-list-container .product-item input[type="checkbox"] {
+    margin-right: 10px;
+}
+
+.product-list-container .product-item img {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    margin-right: 10px;
 }
 
 @media (max-width: 768px) {
     .message-content .product-card {
-        flex: 0 1 100%;
+        width: 100%;
     }
 }
 </style>
@@ -247,7 +293,7 @@ $(document).ready(function() {
     // Cuộn xuống khi trang được tải
     scrollToBottom();
 
-    // Xử lý gửi tin nhắn
+    // Xử lý gửi tin nhắn thường
     $('#adminChatForm').on('submit', function(e) {
         e.preventDefault();
         
@@ -258,20 +304,8 @@ $(document).ready(function() {
         if (!message) return;
 
         // Hiển thị tin nhắn ngay lập tức
-        let messageContent = message;
-        if (message.includes('<div class="product-list"')) {
-            messageContent = message.replace(
-                /(src=")(imageproduct\/)/g, 
-                '$1../$2'
-            ).replace(
-                /(href=")(chi_tiet_san_pham\.php\?id=)/g,
-                '$1/saveweb/admin/admin.php?page=product_form&id='
-            );
-        } else {
-            messageContent = message.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
-        }
+        const messageContent = message.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
 
-        // Thêm tin nhắn vào giao diện
         $('#chatMessages').append(`
             <div class="message admin-message mb-3">
                 <div class="message-content">
@@ -294,11 +328,11 @@ $(document).ready(function() {
             dataType: 'json',
             data: {
                 user_id: userId,
-                message: message
+                message: message,
+                type: 'text'
             },
             success: function(response) {
                 if (response && response.success) {
-                    // Cập nhật thời gian tin nhắn từ server
                     const lastMessage = $('#chatMessages .message:last-child .message-time');
                     if (lastMessage.length && response.time) {
                         lastMessage.text(new Date(response.time).toLocaleString('vi-VN'));
@@ -310,18 +344,161 @@ $(document).ready(function() {
             },
             error: function(xhr, status, error) {
                 console.error('Lỗi AJAX:', error);
-                console.log('Response:', xhr.responseText); // Thêm log để debug
+                console.log('Response:', xhr.responseText);
                 alert('Có lỗi xảy ra khi gửi tin nhắn. Vui lòng thử lại.');
             }
         });
     });
 
-    // Xử lý phím Enter
+    // Xử lý phím Enter cho tin nhắn thường
     $('#messageInput').on('keydown', function(e) {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             $('#adminChatForm').submit();
         }
     });
+
+    // Tìm kiếm sản phẩm
+    let searchTimeout;
+    $('#productSearchInput').on('input', function() {
+        clearTimeout(searchTimeout);
+        const keyword = $(this).val().trim();
+        
+        searchTimeout = setTimeout(() => {
+            if (keyword.length < 2) {
+                $('#productList').html('<p>Nhập ít nhất 2 ký tự để tìm kiếm.</p>');
+                return;
+            }
+
+            $.ajax({
+                url: 'search_products.php',
+                type: 'POST',
+                dataType: 'json',
+                data: { keyword: keyword },
+                success: function(response) {
+                    if (response.success && response.products.length > 0) {
+                        let html = '';
+                        response.products.forEach(product => {
+                            html += `
+                                <div class="product-item">
+                                    <input type="checkbox" class="product-checkbox" value="${product.idsanpham}" 
+                                           data-name="${product.tensanpham}" data-image="${product.image_path}">
+                                    <img src="../${product.image_path}" alt="${product.tensanpham}">
+                                    <span>${product.tensanpham}</span>
+                                </div>
+                            `;
+                        });
+                        $('#productList').html(html);
+                    } else {
+                        $('#productList').html('<p>Không tìm thấy sản phẩm.</p>');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Lỗi tìm kiếm sản phẩm:', error);
+                    $('#productList').html('<p>Có lỗi xảy ra khi tìm kiếm sản phẩm.</p>');
+                }
+            });
+        }, 500);
+    });
+
+    // Xử lý gửi sản phẩm
+    // Trong $(document).ready(function() { ... })
+
+// Xử lý gửi sản phẩm
+$('#sendProductButton').on('click', function() {
+    try {
+        const selectedProducts = [];
+        $('.product-checkbox:checked').each(function() {
+            selectedProducts.push({
+                id: $(this).val(),
+                name: $(this).data('name'),
+                image: $(this).data('image')
+            });
+        });
+
+        if (selectedProducts.length === 0) {
+            alert('Vui lòng chọn ít nhất một sản phẩm.');
+            return;
+        }
+
+        // Tạo cấu trúc HTML cho danh sách sản phẩm (để gửi qua AJAX)
+        let productHtml = '<div class="product-list">';
+        selectedProducts.forEach(product => {
+            productHtml += `
+                <div class="product-card">
+                    <a href="chi_tiet_san_pham.php?id=${product.id}">
+                        <img src="${product.image}" class="product-image">
+                        <div class="product-name">${product.name}</div>
+                    </a>
+                    <button onclick="addToCart('${product.id}')" class="addtocart-btn">Thêm vào giỏ hàng</button>
+                </div>
+            `;
+        });
+        productHtml += '</div>';
+
+        // Tạo HTML hiển thị ngay lập tức (thêm ../ vào src và href)
+        let displayHtml = productHtml.replace(/(src=")(imageproduct\/)/g, '$1../$2')
+                                    .replace(/(href=")(chi_tiet_san_pham\.php\?id=)/g, '$1../$2');
+
+        const userId = $('input[name="user_id"]').val();
+
+        // Hiển thị sản phẩm ngay lập tức
+        $('#chatMessages').append(`
+            <div class="message admin-message mb-3">
+                <div class="message-content">
+                    ${displayHtml}
+                    <div class="message-time text-muted small">
+                        ${new Date().toLocaleString('vi-VN')}
+                    </div>
+                </div>
+            </div>
+        `);
+        scrollToBottom();
+
+        // Gửi sản phẩm qua AJAX
+        $.ajax({
+            url: 'admin_send_message.php',
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                user_id: userId,
+                message: productHtml,
+                type: 'product'
+            },
+            success: function(response) {
+                if (response && response.success) {
+                    const lastMessage = $('#chatMessages .message:last-child .message-time');
+                    if (lastMessage.length && response.time) {
+                        lastMessage.text(new Date(response.time).toLocaleString('vi-VN'));
+                    }
+                } else {
+                    console.error('Lỗi:', response ? response.message : 'Không xác định');
+                    alert('Không thể gửi sản phẩm. Vui lòng thử lại.');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Lỗi AJAX:', error);
+                console.log('Response:', xhr.responseText);
+                alert('Có lỗi xảy ra khi gửi sản phẩm. Vui lòng thử lại.');
+            }
+        });
+
+        // Đóng modal và xóa backdrop
+        $('#productSuggestModal').modal('hide');
+        $('body').removeClass('modal-open');
+        $('.modal-backdrop').remove();
+        $('#productSearchInput').val('');
+        $('#productList').html('');
+    } catch (error) {
+        console.error('Lỗi khi gửi sản phẩm:', error);
+        alert('Có lỗi xảy ra khi gửi sản phẩm. Vui lòng thử lại.');
+        // Đóng modal để khôi phục giao diện
+        $('#productSuggestModal').modal('hide');
+        $('body').removeClass('modal-open');
+        $('.modal-backdrop').remove();
+    }
+});
 });
 </script>
+</body>
+</html>
