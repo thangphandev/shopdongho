@@ -26,7 +26,7 @@ try {
     error_log('Received order data: ' . print_r($data, true));
 
     // Validate required fields
-    $requiredFields = ['fullname', 'phone', 'address', 'payment_method', 'total_amount', 'type'];
+    $requiredFields = ['fullname', 'phone', 'address', 'payment_method', 'total_amount', 'type','ship'];
     foreach ($requiredFields as $field) {
         if (empty($data[$field])) {
             throw new Exception("Missing required field: {$field}");
@@ -47,6 +47,7 @@ try {
         'full_address' => strip_tags(trim($data['address'])),
         'total_amount' => floatval($data['total_amount']),
         'type' => $data['type'],
+        'ship'=>$data['ship'],
         'payment_method' => $data['payment_method'],
         'order_date' => date('Y-m-d H:i:s'),
         'status' => $data['payment_method'] === 'paypal' ? 'Đã xác nhận' : 'Chờ xác nhận',

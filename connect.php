@@ -783,7 +783,7 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
             $stmt = $this->conn->prepare($paymentSql);
             $stmt->execute([
                 ':phuongthuctt' => $paymentMethod,
-                ':tongtien' => $orderData['total_amount'],
+                ':tongtien' => $orderData['ship'],
                 ':trangthai' => $paymentMethod === 'paypal' ? 'Đã thanh toán' : 'Chưa thanh toán',
                 ':magiaodich' => $paymentMethod === 'paypal' ? ($orderData['payment_details'] ?? '') : '',
                 

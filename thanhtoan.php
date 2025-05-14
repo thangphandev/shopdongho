@@ -450,6 +450,7 @@ function placeOrder(paymentMethod = 'cod') {
         fullname: formData.get('fullname'),
         phone: formData.get('phone'),
         address: fullAddress,
+        ship: shippingFee,
         payment_method: paymentMethod,
         total_amount: <?= $total ?> + shippingFee,
         type: '<?= $_GET['type'] ?>',
@@ -542,6 +543,7 @@ document.getElementById('paypal-button').addEventListener('click', function() {
                         fullname: formData.get('fullname'),
                         phone: formData.get('phone'),
                         address: fullAddress,
+                        ship: shippingFee;
                         payment_method: 'paypal',
                         payment_details: JSON.stringify(details),
                         total_amount: <?= $total ?> + shippingFee,

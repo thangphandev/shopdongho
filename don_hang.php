@@ -171,7 +171,7 @@ include 'header.php';
                                                 </div>
                                                 <div class="d-flex justify-content-between mb-2">
                                                     <span class="text-white">Phí vận chuyển:</span>
-                                                    <span class="text-warning">30.000đ</span>
+                                                    <span class="text-warning"><?= number_format($order['tongtien'], 0, ',', '.') ?>đ</span>
                                                 </div>
                                                 <div class="d-flex justify-content-between pt-2 border-top border-secondary">
                                                     <strong class="text-white">Tổng thanh toán:</strong>
