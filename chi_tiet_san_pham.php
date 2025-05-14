@@ -56,7 +56,7 @@ include 'header.php';
                             <div class="product-meta">
                                 <p class="mb-4 clc1 detail_summary d-flex flex-wrap">
                                     <span class="d-md-inline-block pr-3 d-block mb-md-0 mb-2">
-                                        Mã SP: <?php echo htmlspecialchars($product['masanpham'] ?? $product['idsanpham']); ?>
+                                        <!-- Mã SP: <?php echo htmlspecialchars($product['masanpham'] ?? $product['idsanpham']); ?> -->
                                     </span>
                                     <span class="d-inline-block px-3 bdl">
                                         Số lượng: <?php echo htmlspecialchars($product['soluong']); ?>
@@ -377,7 +377,7 @@ include 'header.php';
                                             alt="<?php echo htmlspecialchars($relatedProduct['tensanpham']); ?>"
                                             title="<?php echo htmlspecialchars($relatedProduct['tensanpham']); ?>">
                                     </a>
-                                    <p class="clc1 text-uppercase fs15">MSP: <?php echo htmlspecialchars($relatedProduct['idsanpham']); ?></p>
+                                    <!-- <p class="clc1 text-uppercase fs15">MSP: <?php echo htmlspecialchars($relatedProduct['idsanpham']); ?></p> -->
                                     <h3>
                                         <a href="chi_tiet_san_pham.php?id=<?php echo htmlspecialchars($relatedProduct['idsanpham']); ?>"
                                             title="<?php echo htmlspecialchars($relatedProduct['tensanpham']); ?>"
@@ -416,7 +416,7 @@ include 'header.php';
                                             title="<?php echo htmlspecialchars($product['tensanpham']); ?>">
                                         
                                     </a>
-                                    <p class="clc1 text-uppercase fs15">MSP: <?php echo htmlspecialchars($product['idsanpham']); ?></p>
+                                    <!-- <p class="clc1 text-uppercase fs15">MSP: <?php echo htmlspecialchars($product['idsanpham']); ?></p> -->
                                     <h3>
                                         <a href="chi_tiet_san_pham.php?id=<?php echo htmlspecialchars($product['idsanpham']); ?>"
                                             title="<?php echo htmlspecialchars($product['tensanpham']); ?>"

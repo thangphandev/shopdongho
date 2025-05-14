@@ -15,8 +15,6 @@ $watchTypes = $connect->getAllWatchTypesAdmin($search);
             <i class="fas fa-plus"></i> Thêm loại máy mới
         </button>
     </div>
-
-
     <div class="card mb-4">
         <div class="card-body">
             <form method="GET" class="row g-3">

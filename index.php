@@ -38,7 +38,7 @@ include 'header.php';
                     <div class="slider-caption">
                         <h2>Bộ Sưu Tập Đồng Hồ Cao Cấp</h2>
                         <p>Khám phá những mẫu đồng hồ đẳng cấp từ các thương hiệu hàng đầu thế giới</p>
-                        <a href="san-pham" class="btn-slider">Khám phá ngay</a>
+                        <!-- <a href="san-pham" class="btn-slider">Khám phá ngay</a> -->
                     </div>
                 </div>
                 <div class="item">
@@ -46,7 +46,7 @@ include 'header.php';
                     <div class="slider-caption">
                         <h2>Đồng Hồ Chính Hãng 100%</h2>
                         <p>Cam kết về chất lượng và nguồn gốc xuất xứ rõ ràng</p>
-                        <a href="hang_co_san.php" class="btn-slider">Xem bộ sưu tập</a>
+                        <!-- <a href="hang_co_san.php" class="btn-slider">Xem bộ sưu tập</a> -->
                     </div>
                 </div>
                 <div class="item">
@@ -54,7 +54,7 @@ include 'header.php';
                     <div class="slider-caption">
                         <h2>Dịch Vụ Trao Đổi & Ký Gửi</h2>
                         <p>Giải pháp mua bán, trao đổi đồng hồ cao cấp uy tín hàng đầu Việt Nam</p>
-                        <a href="dich-vu" class="btn-slider">Tìm hiểu thêm</a>
+                      <!-- <a href="dich-vu" class="btn-slider">Tìm hiểu thêm</a> -->
                     </div>
                 </div>
                 <div class="item">
@@ -62,7 +62,7 @@ include 'header.php';
                     <div class="slider-caption">
                         <h2>Bộ Sưu Tập Đồng Hồ Cao Cấp</h2>
                         <p>Khám phá những mẫu đồng hồ đẳng cấp từ các thương hiệu hàng đầu thế giới</p>
-                        <a href="san-pham" class="btn-slider">Khám phá ngay</a>
+                        <!-- <a href="san-pham" class="btn-slider">Khám phá ngay</a> -->
                     </div>
                 </div>
                 <div class="item">
@@ -70,7 +70,7 @@ include 'header.php';
                     <div class="slider-caption">
                         <h2>Đồng Hồ Chính Hãng 100%</h2>
                         <p>Cam kết về chất lượng và nguồn gốc xuất xứ rõ ràng</p>
-                        <a href="san-pham-co-san" class="btn-slider">Xem bộ sưu tập</a>
+                        <!-- <a href="san-pham-co-san" class="btn-slider">Xem bộ sưu tập</a> -->
                     </div>
                 </div>
             </div>
@@ -100,7 +100,7 @@ include 'header.php';
                                         <div class="status status--discount">-<?php echo number_format($product['gia_giam'], 0, ',', '.'); ?>đ</div>
                                     <?php endif; ?>
                                 </a>
-                                <p class="clc1 text-uppercase fs15">MSP: <?php echo htmlspecialchars($product['idsanpham']); ?></p>
+                                <!-- <p class="clc1 text-uppercase fs15">MSP: <?php echo htmlspecialchars($product['idsanpham']); ?></p> -->
                                 <h3>
                                     <a href="chi_tiet_san_pham.php?id=<?php echo htmlspecialchars($product['idsanpham']); ?>"
                                         title="<?php echo htmlspecialchars($product['tensanpham']); ?>"
@@ -146,7 +146,7 @@ include 'header.php';
                                         <div class="status status--discount">-<?php echo number_format($product['gia_giam'], 0, ',', '.'); ?>đ</div>
                                     <?php endif; ?>
                                     </a>
-                                    <p class="clc1 text-uppercase fs15">MSP: <?php echo htmlspecialchars($product['idsanpham']); ?></p>
+                                    <!-- <p class="clc1 text-uppercase fs15">MSP: <?php echo htmlspecialchars($product['idsanpham']); ?></p> -->
                                     <h3>
                                         <a href="chi_tiet_san_pham.php?id=<?php echo htmlspecialchars($product['idsanpham']); ?>"
                                             title="<?php echo htmlspecialchars($product['tensanpham']); ?>"
@@ -198,7 +198,7 @@ include 'header.php';
                                                 <div class="status status--discount">-<?php echo number_format($product['gia_giam'], 0, ',', '.'); ?>đ</div>
                                             <?php endif; ?>
                                     </a>
-                                    <p class="clc1 text-uppercase fs15">MSP: <?php echo htmlspecialchars($product['idsanpham']); ?></p>
+                                    <!-- <p class="clc1 text-uppercase fs15">MSP: <?php echo htmlspecialchars($product['idsanpham']); ?></p> -->
                                     <h3>
                                         <a href="chi_tiet_san_pham.php?id=<?php echo htmlspecialchars($product['idsanpham']); ?>"
                                             title="<?php echo htmlspecialchars($product['tensanpham']); ?>"

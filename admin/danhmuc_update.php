@@ -32,11 +32,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 break;
 
             case 'delete':
-                $id = $_POST['id_loai_may'];
-                if ($connect->deleteWatchType($id)) {
-                    $_SESSION['success_message'] = "Xóa loại máy thành công!";
-                } else {
-                    $_SESSION['error_message'] = "Không thể xóa loại máy!";
+                $id = $_POST['iddanhmuc']; // Fixed parameter name
+                // Hàm deleteCategory sẽ ném ngoại lệ nếu danh mục có sản phẩm
+                if ($connect->deleteCategory($id)) {
+                    $_SESSION['success_message'] = "Xóa danh mục thành công!";
                 }
                 break;
         }
@@ -44,6 +43,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['error_message'] = $e->getMessage();
     }
 }
-
+    
 header('Location: admin.php?page=danhmuc');
 exit;

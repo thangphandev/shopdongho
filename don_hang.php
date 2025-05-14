@@ -371,7 +371,7 @@ include 'header.php';
         position: relative;
         color:#dbaf56;
     }
-    h6.{
+    h6{
         font-size: 1.5rem;
     }
     h5 {

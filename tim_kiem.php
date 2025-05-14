@@ -212,7 +212,7 @@ include 'header.php';
                                             <div class="status status--discount">-<?= number_format($product['gia_giam'], 0, ',', '.') ?>đ</div>
                                         <?php endif; ?>
                                     </a>
-                                    <p class="clc1 text-uppercase fs15">MSP: <?= htmlspecialchars($product['idsanpham']) ?></p>
+                                    <!-- <p class="clc1 text-uppercase fs15">MSP: <?= htmlspecialchars($product['idsanpham']) ?></p> -->
                                     <h3>
                                         <a href="chi_tiet_san_pham.php?id=<?= htmlspecialchars($product['idsanpham']) ?>"
                                            title="<?= htmlspecialchars($product['tensanpham']) ?>"

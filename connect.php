@@ -60,7 +60,96 @@ class connect {
             return array();
         }
     }
-
+    public function getAllPolicies() {
+        try {
+            $query = "SELECT * FROM chinhsach ORDER BY id ASC";
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            error_log("Error in getAllPolicies: " . $e->getMessage());
+            return array();
+        }
+    }
+    public function getPolicyById($id) {
+        try {
+            $query = "SELECT * FROM chinhsach WHERE id = :id";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            error_log("Error in getPolicyById: " . $e->getMessage());
+            return null;
+        }
+    }
+    // Lấy tất cả các mục giới thiệu
+public function getAllIntroSections() {
+    try {
+        $sql = "SELECT * FROM gioithieu WHERE trang_thai = 1 ORDER BY thu_tu ASC";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Lỗi khi lấy danh sách mục giới thiệu: " . $e->getMessage());
+        return [];
+    }
+}
+// Lấy thông tin mục giới thiệu theo ID
+public function getIntroSectionByCode($id) {
+    try {
+        $sql = "SELECT * FROM gioithieu WHERE id = :id AND trang_thai = 1";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Lỗi khi lấy thông tin mục giới thiệu: " . $e->getMessage());
+        return null;
+    }
+}
+    public function addPolicy($tieude, $noidung) {
+        try {
+            $query = "INSERT INTO chinhsach (tieude, noidung) VALUES (:tieude, :noidung)";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':tieude', $tieude, PDO::PARAM_STR);
+            $stmt->bindParam(':noidung', $noidung, PDO::PARAM_STR);
+            
+            if ($stmt->execute()) {
+                return $this->conn->lastInsertId();
+            }
+            return false;
+        } catch(PDOException $e) {
+            error_log("Error in addPolicy: " . $e->getMessage());
+            return false;
+        }
+    }
+    public function updatePolicy($id, $tieude, $noidung) {
+        try {
+            $query = "UPDATE chinhsach SET tieude = :tieude, noidung = :noidung WHERE id = :id";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+            $stmt->bindParam(':tieude', $tieude, PDO::PARAM_STR);
+            $stmt->bindParam(':noidung', $noidung, PDO::PARAM_STR);
+            
+            return $stmt->execute();
+        } catch(PDOException $e) {
+            error_log("Error in updatePolicy: " . $e->getMessage());
+            return false;
+        }
+    }
+    public function deletePolicy($id) {
+        try {
+            $query = "DELETE FROM chinhsach WHERE id = :id";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+            
+            return $stmt->execute();
+        } catch(PDOException $e) {
+            error_log("Error in deletePolicy: " . $e->getMessage());
+            return false;
+        }
+    }
     public function getCategories() {  
         try {
             $query = "SELECT * FROM danhmuc 
@@ -1636,17 +1725,17 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
         }
     }
     
-    public function deleteSupplier($id) {
-        try {
-            $query = "DELETE FROM nhacungcap WHERE idnhacungcap = :idnhacungcap";
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(':idnhacungcap', $id);
-            return $stmt->execute();
-        } catch(PDOException $e) {
-            error_log("Error deleting supplier: " . $e->getMessage());
-            return false;
-        }
-    }
+    // public function deleteSupplier($id) {
+    //     try {
+    //         $query = "DELETE FROM nhacungcap WHERE idnhacungcap = :idnhacungcap";
+    //         $stmt = $this->conn->prepare($query);
+    //         $stmt->bindParam(':idnhacungcap', $id);
+    //         return $stmt->execute();
+    //     } catch(PDOException $e) {
+    //         error_log("Error deleting supplier: " . $e->getMessage());
+    //         return false;
+    //     }
+    // }
     //lấy chinh sach bao hanh
     public function getAllWarrantyPolicies() {
         try {
@@ -1994,7 +2083,7 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
     //xóa loại máy
     public function deleteWatchType($id) {
         try {
-            $query = "DELETE FROM loai_may WHERE id_loai_may = :id_loai_may";
+            $query = "DELETE FROM loaimay WHERE id_loai_may = :id_loai_may";
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':id_loai_may', $id);
             return $stmt->execute();
@@ -2003,9 +2092,6 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
             return false;
         }
     }
-
-    
-
 
     //lấy tất cả loại dây
     public function getAllStrapTypes($search = '') {
@@ -2287,19 +2373,77 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
             throw $e;
         }
     }
-    
-    public function deleteCategory($id) {
+    public function checkCategoryHasProducts($categoryId) {
         try {
-            $query = "DELETE FROM danhmuc WHERE iddanhmuc = :iddanhmuc";
+            $query = "SELECT COUNT(*) as count FROM sanpham WHERE iddanhmuc = :iddanhmuc";
             $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(':iddanhmuc', $id);
-            return $stmt->execute();
+            $stmt->bindParam(':iddanhmuc', $categoryId, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result['count'];
         } catch(PDOException $e) {
-            error_log("Error deleting category: " . $e->getMessage());
+            error_log("Lỗi khi kiểm tra sản phẩm trong danh mục: " . $e->getMessage());
             return false;
         }
     }
-
+    public function deleteCategory($id) {
+        try {
+            // Kiểm tra xem danh mục có sản phẩm không
+            $productCount = $this->checkCategoryHasProducts($id);
+            
+            if ($productCount > 0) {
+                // Nếu có sản phẩm, không cho phép xóa
+                throw new Exception("Không thể xóa danh mục này vì đang có " . $productCount . " sản phẩm!");
+            }
+            
+            // Nếu không có sản phẩm, tiến hành xóa
+            $query = "DELETE FROM danhmuc WHERE iddanhmuc = :iddanhmuc";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':iddanhmuc', $id, PDO::PARAM_INT);
+            return $stmt->execute();
+        } catch(Exception $e) {
+            error_log("Lỗi khi xóa danh mục: " . $e->getMessage());
+            throw $e; // Ném lại ngoại lệ để được bắt ở nơi gọi hàm
+        }
+    }
+    public function getTopSellingProductsByQuantity($limit = 5, $month = null, $year = null) {
+        try {
+            $query = "SELECT sp.*, 
+                     SUM(cd.soluong) as total_quantity,
+                     COUNT(DISTINCT cd.iddonhang) as total_sold,
+                     SUM(cd.soluong * cd.dongia) as total_revenue,
+                     dm.tendanhmuc
+                     FROM sanpham sp
+                     JOIN chitietdonhang cd ON sp.idsanpham = cd.idsanpham
+                     JOIN donhang dh ON cd.iddonhang = dh.iddonhang
+                     LEFT JOIN danhmuc dm ON sp.iddanhmuc = dm.iddanhmuc
+                     WHERE dh.trangthai = 'Hoàn thành'";
+            
+            if ($month && $year) {
+                $query .= " AND MONTH(dh.ngaydat) = :month AND YEAR(dh.ngaydat) = :year";
+            }
+            
+            $query .= " GROUP BY sp.idsanpham
+                       ORDER BY total_quantity DESC
+                       LIMIT :limit";
+            
+            $stmt = $this->conn->prepare($query);
+            
+            if ($month && $year) {
+                $stmt->bindParam(':month', $month, PDO::PARAM_INT);
+                $stmt->bindParam(':year', $year, PDO::PARAM_INT);
+            }
+            
+            $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            error_log("Error getting top selling products by quantity: " . $e->getMessage());
+            return [];
+        }
+    }
     //lấy danh sach đơn hàng
     public function getAllOrdersAdmin($search = '', $status = '') {
         try {
@@ -2837,7 +2981,32 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
             return false;
         }
     }
-
+    public function deleteSupplier($id) {
+        try {
+            // Kiểm tra xem nhà cung cấp có đang cung cấp sản phẩm nào không
+            $query = "SELECT COUNT(*) as count FROM sanpham WHERE idnhacungcap = :idnhacungcap";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':idnhacungcap', $id);
+            $stmt->execute();
+            
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            $productCount = $result['count'];
+            
+            if ($productCount > 0) {
+                // Nếu có sản phẩm, không cho phép xóa
+                throw new Exception("Không thể xóa nhà cung cấp này vì đang cung cấp " . $productCount . " sản phẩm!");
+            }
+            
+            // Nếu không có sản phẩm, tiến hành xóa
+            $query = "DELETE FROM nhacungcap WHERE idnhacungcap = :idnhacungcap";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':idnhacungcap', $id);
+            return $stmt->execute();
+        } catch(Exception $e) {
+            error_log("Lỗi khi xóa nhà cung cấp: " . $e->getMessage());
+            throw $e; // Ném lại ngoại lệ để được bắt ở nơi gọi hàm
+        }
+    }
 
     public function getUserById($userId) {
         try {

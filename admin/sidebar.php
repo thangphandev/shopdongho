@@ -36,6 +36,7 @@
             <li class="nav-item">
                 <a class="nav-link text-white" href="?page=tinnhan"><i class="fas fa-comments"></i> <span>Quản lý tin nhắn</span></a>
             </li>
+            
             <li class="nav-item">
                 <a class="nav-link text-white" href="?page=khuyenmai"><i class="fas fa-percent"></i> <span>Quản lý khuyến mãi</span></a>
             </li>

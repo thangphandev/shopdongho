@@ -46,9 +46,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="h-menu">
                     <div class="main-nav d-flex flex-wrap align-items-center">
                         <ul>
+                        
                             <li><a href="index.php" title="TRANG CHỦ" class="smooth">TRANG CHỦ</a></li>
                             <li class="menusp">
-                                <a href="san-pham" title="Thương hiệu" class="smooth">Thương hiệu</a>
+                                <a href="" title="Thương hiệu" class="smooth">Thương hiệu</a>
                                 <ul>
                                     <li class="col_menusp col_tm">
                                         <span>Thương hiệu</span>
@@ -113,13 +114,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <a href="hang_moi.php" title="Hàng mới" class="smooth">HÀNG MỚI</a>
                                 <!-- Menu động có thể thêm từ PHP -->
                             </li>
+                          
                             <li class="menusp">
-                                <a href="san-pham" title="Chính sách của shop" class="smooth">CHÍNH SÁCH</a>
+                                <a href="chinh-sach.php" title="Chính sách của shop" class="smooth">CHÍNH SÁCH</a>
                                 <!-- Menu động có thể thêm từ PHP -->
-                            </li>
-                            
+                            </li>                          
                             <li class="menusp">
-                                <a href="san-pham" title="Giới thiệu" class="smooth">GIỚI THIỆU</a> <!-- Menu động có thể thêm từ PHP -->
+                                <a href="gioi-thieu.php" title="Giới thiệu" class="smooth">GIỚI THIỆU</a> <!-- Menu động có thể thêm từ PHP -->
                             </li>
                             <li class="menusp">
                                 <a href="chat.php" title="Nhắn tin với shop" class="smooth">NHẮN TIN</a>
@@ -143,7 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     </span>
                                 <?php endif; ?>
                             </a>
-
+<!-- 
                             <div class="user-dropdown">
                                 <button type="button" class="d_btn clnau bdnau fs20 cspoint d-inline-block text-center ml-2">
                                     <i class="fa fa-user"></i>
@@ -153,8 +154,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <a href="don_hang.php"><i class="fa fa-box"></i> Thông tin đơn hàng</a>
                                     <a href="logout.php">Đăng xuất <i class="fa fa-sign-out"></i></a>
                                 </div>
-                            </div>
-
+                            </div> -->
+                            <div class="user-dropdown">
+                                <button type="button" class="d_btn clnau bdnau fs20 cspoint d-inline-block text-center ml-2">
+                                    <i class="fa fa-user"></i>
+                                </button>
+                                <div class="dropdown-content">
+                                    <?php if(isset($_SESSION['user_id']) || isset($_SESSION['admin_id'])): ?>
+                                        <a href="thong_tin_ca_nhan.php"><i class="fa fa-user-circle"></i> Thông tin cá nhân</a>
+                                        <a href="don_hang.php"><i class="fa fa-box"></i> Thông tin đơn hàng</a>
+                                        <a href="logout.php">Đăng xuất <i class="fa fa-sign-out"></i></a>
+                                    <?php else: ?>
+                                        <a href="login.php"><i class="fa fa-sign-in"></i> Đăng nhập</a>
+                                        <a href="login.php"><i class="fa fa-user-plus"></i> Đăng ký</a>
+                                    <?php endif; ?>
+                                </div>
+                            </div>        
                         </ul>
                     </div>
                 </div>

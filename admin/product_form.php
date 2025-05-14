@@ -227,11 +227,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <div class="mb-3">
                                     <label for="giaban" class="form-label">Giá bán <span class="text-danger">*</span></label>
                                     <div class="input-group">
-                                        <input type="text" class="form-control" id="giaban" name="giaban" value="<?php echo $product['giaban']; ?>" min="0" onkeypress="return event.charCode >= 48"  required>
+                                        <input type="text" class="form-control" id="giaban" name="giaban" value="<?php echo $product['giaban']; ?>" min="0" oninput="validatePositiveNumber(this)" required>
                                         <span class="input-group-text">₫</span>
                                     </div>
                                     <div id="giaban-error" class="invalid-feedback" style="display: none;">
                                         Giá bán phải lớn hơn giá nhập
+                                    </div>
+                                    <div id="giaban-negative-error" class="invalid-feedback" style="display: none;">
+                                        Giá bán không được là số âm
                                     </div>
                                 </div>
                             </div>
@@ -239,8 +242,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <div class="mb-3">
                                     <label for="gianhap" class="form-label">Giá nhập <span class="text-danger">*</span></label>
                                     <div class="input-group">
-                                        <input type="text" class="form-control" id="gianhap" name="gianhap" value="<?php echo $product['gianhap']; ?>" min="0" onkeypress="return event.charCode >= 48" required>
+                                        <input type="text" class="form-control" id="gianhap" name="gianhap" value="<?php echo $product['gianhap']; ?>" min="0" oninput="validatePositiveNumber(this)" required>
                                         <span class="input-group-text">₫</span>
+                                    </div>
+                                    <div id="gianhap-negative-error" class="invalid-feedback" style="display: none;">
+                                        Giá nhập không được là số âm
                                     </div>
                                 </div>
                             </div>
@@ -345,8 +351,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <div class="mb-3">
                                     <label for="kichthuoc" class="form-label">Kích thước</label>
                                     <div class="input-group">
-                                        <input type="text" class="form-control" id="kichthuoc" name="kichthuoc" value="<?php echo htmlspecialchars($product['kichthuoc']); ?>">
+                                        <input type="text" class="form-control" id="kichthuoc" name="kichthuoc" value="<?php echo htmlspecialchars($product['kichthuoc']); ?>" oninput="validatePositiveNumber(this)">
                                         <span class="input-group-text">mm</span>
+                                    </div>
+                                    <div id="kichthuoc-negative-error" class="invalid-feedback" style="display: none;">
+                                        Kích thước không được là số âm  
                                     </div>
                                 </div>
                             </div>
@@ -354,8 +363,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <div class="mb-3">
                                     <label for="doday" class="form-label">Độ dày</label>
                                     <div class="input-group">
-                                        <input type="text" class="form-control" id="doday" name="doday" value="<?php echo htmlspecialchars($product['doday']); ?>">
+                                        <input type="text" class="form-control" id="doday" name="doday" value="<?php echo htmlspecialchars($product['doday']); ?>" oninput="validatePositiveNumber(this)">
                                         <span class="input-group-text">mm</span>
+                                    </div>
+                                    <div id="doday-negative-error" class="invalid-feedback" style="display: none;">
+                                        Độ dày không được là số âm
                                     </div>
                                 </div>
                             </div>
@@ -363,8 +375,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <div class="mb-3">
                                     <label for="chongnuoc" class="form-label">Chống nước</label>
                                     <div class="input-group">
-                                        <input type="text" class="form-control" id="chongnuoc" name="chongnuoc" value="<?php echo htmlspecialchars($product['chongnuoc']); ?>">
+                                        <input type="text" class="form-control" id="chongnuoc" name="chongnuoc" value="<?php echo htmlspecialchars($product['chongnuoc']); ?>" oninput="validatePositiveNumber(this)">
                                         <span class="input-group-text">ATM</span>
+                                    </div>
+                                    <div id="chongnuoc-negative-error" class="invalid-feedback" style="display: none;">
+                                        Chống nước không được là số âm
                                     </div>
                                 </div>
                             </div>
@@ -624,4 +639,64 @@ document.getElementById('product_image').addEventListener('change', function(e) 
         reader.readAsDataURL(e.target.files[0]);
     }
 });
+
+document.getElementById('product_image').addEventListener('change', function(e) {
+    // ... existing code ...
+});
+
+// Thêm hàm kiểm tra số dương
+function validatePositiveNumber(input) {
+    // Xóa các ký tự không phải số và dấu thập phân
+    let value = input.value;
+    
+    // Kiểm tra nếu giá trị chứa dấu trừ
+    if (value.includes('-')) {
+        // Hiển thị thông báo lỗi cho giá trị âm
+        const errorId = input.id + '-negative-error';
+        document.getElementById(errorId).style.display = 'block';
+        input.classList.add('is-invalid');
+        
+        // Xóa dấu trừ
+        value = value.replace(/-/g, '');
+        input.value = value;
+    } else {
+        // Ẩn thông báo lỗi nếu không có dấu trừ
+        const errorId = input.id + '-negative-error';
+        if (document.getElementById(errorId)) {
+            document.getElementById(errorId).style.display = 'none';
+            input.classList.remove('is-invalid');
+        }
+    }
+    
+    // Chỉ cho phép số và dấu thập phân
+    input.value = value.replace(/[^\d.]/g, '');
+    
+    // Kiểm tra giá nếu cả hai trường đều có giá trị
+    if (input.id === 'giaban' || input.id === 'gianhap') {
+        validatePrices();
+    }
+}
+
+// Cập nhật hàm validatePrices để hoạt động với hệ thống xác thực mới
+function validatePrices() {
+    const giaban = parseFloat(document.getElementById('giaban').value) || 0;
+    const gianhap = parseFloat(document.getElementById('gianhap').value) || 0;
+    const giabanError = document.getElementById('giaban-error');
+    const submitButton = document.querySelector('button[type="submit"]');
+
+    if (giaban <= gianhap && giaban !== 0) {
+        giabanError.style.display = 'block';
+        document.getElementById('giaban').classList.add('is-invalid');
+        submitButton.disabled = true;
+    } else {
+        giabanError.style.display = 'none';
+        if (!document.getElementById('giaban').value.includes('-')) {
+            document.getElementById('giaban').classList.remove('is-invalid');
+        }
+        submitButton.disabled = false;
+    }
+}
+
+
+
 </script>

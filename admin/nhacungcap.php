@@ -171,6 +171,27 @@ $suppliers = $connect->getAllSuppliers($search);
 </div>
 
 <script>
+
+
+// // Add event listeners to phone inputs
+// document.getElementById('sdt').addEventListener('input', function() {
+//     validatePhoneNumber(this);
+// });
+
+// document.getElementById('edit_sdt').addEventListener('input', function() {
+//     validatePhoneNumber(this);
+// });
+
+
+
+
+// Add to your existing form elements
+// document.querySelectorAll('input[name="sdt"]').forEach(input => {
+//     input.addEventListener('input', function() {
+//         validatePhone(this);
+//     });
+// });
+
 document.querySelectorAll('.edit-supplier').forEach(button => {
     button.addEventListener('click', function() {
         const id = this.getAttribute('data-id');
@@ -184,60 +205,28 @@ document.querySelectorAll('.edit-supplier').forEach(button => {
         document.getElementById('edit_sdt').value = phone;
     });
 });
-function validatePhoneNumber(input) {
-    let phone = input.value;
-    
-    // Remove any non-digit characters
-    phone = phone.replace(/\D/g, '');
-    
-    // Ensure it starts with 0
-    if (phone.length > 0 && phone[0] !== '0') {
-        phone = '0' + phone;
+
+// Fix for delete button functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Xử lý input số điện thoại trong form thêm mới
+    const sdtInput = document.getElementById('sdt');
+    if (sdtInput) {
+        sdtInput.addEventListener('input', function() {
+            validatePhoneNumber(this);
+        });
     }
     
-    // Limit to 10 digits
-    phone = phone.substring(0, 10);
-    
-    // Update input value
-    input.value = phone;
-    
-    // Validate format
-    if (!/^0[0-9]{9}$/.test(phone)) {
-        input.setCustomValidity('Số điện thoại phải bắt đầu bằng số 0 và có 10 chữ số');
-    } else {
-        input.setCustomValidity('');
+    // Xử lý input số điện thoại trong form chỉnh sửa
+    const editSdtInput = document.getElementById('edit_sdt');
+    if (editSdtInput) {
+        editSdtInput.addEventListener('input', function() {
+            validatePhoneNumber(this);
+        });
     }
-}
-
-// Add event listeners to phone inputs
-document.getElementById('sdt').addEventListener('input', function() {
-    validatePhoneNumber(this);
 });
-
-document.getElementById('edit_sdt').addEventListener('input', function() {
-    validatePhoneNumber(this);
-});
-
-function validatePhone(input) {
-    // Remove any non-digit characters
-    let phone = input.value.replace(/\D/g, '');
     
-    // Ensure exactly 10 digits
-    if (phone.length !== 10) {
-        input.setCustomValidity('Số điện thoại phải có 10 chữ số!');
-    } else {
-        input.setCustomValidity('');
-    }
-}
-
-// Add to your existing form elements
-document.querySelectorAll('input[name="sdt"]').forEach(input => {
-    input.addEventListener('input', function() {
-        validatePhone(this);
-    });
-});
-
-document.querySelectorAll('.delete-supplier').forEach(button => {
+    // Sửa lại xử lý nút xóa
+    document.querySelectorAll('.delete-supplier').forEach(button => {
     button.addEventListener('click', function() {
         const id = this.getAttribute('data-id');
         const name = this.getAttribute('data-name');
@@ -264,4 +253,5 @@ document.querySelectorAll('.delete-supplier').forEach(button => {
         }
     });
 });
+
 </script>

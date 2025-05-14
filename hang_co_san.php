@@ -46,7 +46,7 @@ include 'header.php';
                                     <div class="status status--discount">-<?php echo number_format($product['gia_giam'], 0, ',', '.'); ?>đ</div>
                                     <?php endif; ?>
                                 </a>
-                                <p class="clc1 text-uppercase fs15">MSP: <?php echo htmlspecialchars($product['idsanpham']); ?></p>
+                                <!-- <p class="clc1 text-uppercase fs15">MSP: <?php echo htmlspecialchars($product['idsanpham']); ?></p> -->
                                 <h3>
                                     <a href="chi_tiet_san_pham.php?id=<?php echo htmlspecialchars($product['idsanpham']); ?>"
                                         title="<?php echo htmlspecialchars($product['tensanpham'] ?? $product['tensp']); ?>"
@@ -79,7 +79,7 @@ include 'header.php';
 
 <style>
 .status--available {
-    background-color: #28a745;
+  
     color: white;
     position: absolute;
     top: 0;

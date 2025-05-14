@@ -67,7 +67,7 @@ include 'header.php';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Thanh toán</title>
-    <script src="https://www.paypal.com/sdk/js?client-id=AXezv0EzYczvRc7WGgplyMmahMEPEuQyG88VxhkmncsnPf-w-Xa2fZnk-PEFsfvDIAkdpsM1JOs2hHDJ&currency=USD"></script>
+    <script src="https://www.paypal.com/sdk/js?client-id=AeadJOLL1CE0wB0IEiZ9pUgWrDLTS0MV76oLnIKd5huowzM3lX-Skbce_u3UoKSVICrWODIlAOpIBrAd&currency=USD"></script>
 </head>
 <body>
 <div class="main-content">
@@ -386,7 +386,7 @@ include 'header.php';
         // Initialize PayPal button
         paypal.Buttons({
             createOrder: function(data, actions) {
-                const amount = (<?= $total + 30000 ?> / 23000).toFixed(2); // Convert VND to USD
+                const amount = (<?= $total + 30000 ?> / 25000).toFixed(2); // Convert VND to USD
                 return actions.order.create({
                     purchase_units: [{
                         amount: {

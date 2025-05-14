@@ -35,10 +35,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             case 'delete':
                 $id = $_POST['idnhacungcap'];
+                // Hàm deleteSupplier sẽ ném ngoại lệ nếu nhà cung cấp có sản phẩm
                 if ($connect->deleteSupplier($id)) {
                     $_SESSION['success_message'] = "Xóa nhà cung cấp thành công!";
-                } else {
-                    $_SESSION['error_message'] = "Không thể xóa nhà cung cấp!";
                 }
                 break;
         }
