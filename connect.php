@@ -390,7 +390,7 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
 //hàm tương tác với đon hàng
     public function getUserOrders($userId) {
         try {
-            $query = "SELECT d.*, ct.trangthai as trangthai_thanhtoan 
+            $query = "SELECT d.*, ct.trangthai as trangthai_thanhtoan, ct.tongtien as tongtien_thanhtoan
                     FROM donhang d
                     LEFT JOIN chitietthanhtoan ct ON d.idthanhtoan = ct.idthanhtoan
                     WHERE d.idnguoidung = :userId 
@@ -728,29 +728,76 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
     //cập nhật ssô lượng sản phẩm trong giỏ hàng
     public function updatesoluongsanpham($idnguoidung, $idsanpham, $soluong) {
         try {
+            // Kiểm tra số lượng tồn kho
+            $query = "SELECT soluong FROM sanpham WHERE idsanpham = :idsanpham AND trangthai = 1";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':idsanpham', $idsanpham, PDO::PARAM_INT);
+            $stmt->execute();
+            $product = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+            if (!$product) {
+                return ['success' => false, 'message' => 'Sản phẩm không tồn tại hoặc không hoạt động'];
+            }
+    
+            $maxQuantity = (int)$product['soluong'];
+            if ($soluong < 1) {
+                return ['success' => false, 'message' => 'Số lượng phải lớn hơn 0'];
+            }
+            if ($soluong > $maxQuantity) {
+                return ['success' => false, 'message' => 'Số lượng vượt quá tồn kho'];
+            }
+    
             // Get cart ID
             $query = "SELECT idgiohang FROM giohang WHERE idnguoidung = :idnguoidung LIMIT 1";
             $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(':idnguoidung', $idnguoidung);
+            $stmt->bindParam(':idnguoidung', $idnguoidung, PDO::PARAM_INT);
             $stmt->execute();
             $cart = $stmt->fetch(PDO::FETCH_ASSOC);
             
-            if($cart) {
-                // Update quantity in chitietgiohang
+            if (!$cart) {
+                return ['success' => false, 'message' => 'Không tìm thấy giỏ hàng'];
+            }
+    
+            // Kiểm tra xem sản phẩm đã có trong chi tiết giỏ hàng chưa
+            $query = "SELECT COUNT(*) as count FROM chitietgiohang 
+                      WHERE idgiohang = :idgiohang AND idsanpham = :idsanpham";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':idgiohang', $cart['idgiohang'], PDO::PARAM_INT);
+            $stmt->bindParam(':idsanpham', $idsanpham, PDO::PARAM_INT);
+            $stmt->execute();
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+            if ($result['count'] > 0) {
+                // Cập nhật số lượng nếu sản phẩm đã tồn tại
                 $query = "UPDATE chitietgiohang 
                          SET soluong = :soluong 
                          WHERE idgiohang = :idgiohang AND idsanpham = :idsanpham";
                 $stmt = $this->conn->prepare($query);
-                $stmt->bindParam(':idgiohang', $cart['idgiohang']);
-                $stmt->bindParam(':idsanpham', $idsanpham);
-                $stmt->bindParam(':soluong', $soluong);
+                $stmt->bindParam(':idgiohang', $cart['idgiohang'], PDO::PARAM_INT);
+                $stmt->bindParam(':idsanpham', $idsanpham, PDO::PARAM_INT);
+                $stmt->bindParam(':soluong', $soluong, PDO::PARAM_INT);
                 
-                return $stmt->execute();
+                if ($stmt->execute()) {
+                    return ['success' => true, 'message' => 'Cập nhật số lượng thành công'];
+                }
+                return ['success' => false, 'message' => 'Không thể cập nhật số lượng'];
+            } else {
+                // Thêm sản phẩm mới vào chi tiết giỏ hàng
+                $query = "INSERT INTO chitietgiohang (idgiohang, idsanpham, soluong) 
+                         VALUES (:idgiohang, :idsanpham, :soluong)";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindParam(':idgiohang', $cart['idgiohang'], PDO::PARAM_INT);
+                $stmt->bindParam(':idsanpham', $idsanpham, PDO::PARAM_INT);
+                $stmt->bindParam(':soluong', $soluong, PDO::PARAM_INT);
+                
+                if ($stmt->execute()) {
+                    return ['success' => true, 'message' => 'Thêm sản phẩm vào giỏ hàng thành công'];
+                }
+                return ['success' => false, 'message' => 'Không thể thêm sản phẩm vào giỏ hàng'];
             }
-            return false;
         } catch(PDOException $e) {
             error_log("Update cart quantity error: " . $e->getMessage());
-            return false;
+            return ['success' => false, 'message' => 'Lỗi cơ sở dữ liệu: ' . $e->getMessage()];
         }
     }
 
@@ -1829,16 +1876,18 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
     public function getMonthlyReports($month, $year) {
         try {
             $query = "SELECT * FROM baocao 
-                      WHERE MONTH(ngaytao) = :month 
-                      AND YEAR(ngaytao) = :year 
-                      ORDER BY ngaytao DESC";
+                      WHERE thang = :month 
+                      AND nam = :year 
+                      ORDER BY ngaytao DESC 
+                      LIMIT 1";
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':month', $month, PDO::PARAM_INT);
             $stmt->bindParam(':year', $year, PDO::PARAM_INT);
             $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result ? [$result] : [];
         } catch(PDOException $e) {
-            error_log("Error getting monthly reports: " . $e->getMessage());
+            error_log("Error getting monthly report: " . $e->getMessage());
             return [];
         }
     }
@@ -2775,7 +2824,7 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
             if ($password !== null) {
                 $query .= ", matkhau = :password";
             }
-            $query .= " WHERE idnguoidung = :id AND role = 1";
+            $query .= " WHERE idnguoidung = :id";
             
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':username', $username);
@@ -3164,6 +3213,7 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
             error_log("Registration error: " . $e->getMessage());
             return ['success' => false, 'message' => 'Đăng ký thất bại'];
         }
+        
     }
     
     public function logout() {
@@ -3171,6 +3221,162 @@ public function searchProducts($keyword, $brands, $watch_types, $strap_types, $g
         session_destroy();
         return true;
     }
-    
+    // Lấy tất cả chính sách bảo hành cho admin
+public function getAllWarrantiesAdmin($search = '') {
+    try {
+        $query = "SELECT * FROM chinhsachbaohanh 
+                WHERE ten_chinh_sách LIKE :search OR noi_dung_chinh_sach LIKE :search
+                ORDER BY id_chinh_sach DESC";
+        
+        $stmt = $this->conn->prepare($query);
+        $searchParam = "%$search%";
+        $stmt->bindParam(':search', $searchParam);
+        $stmt->execute();
+        
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch(PDOException $e) {
+        error_log("Error getting warranties: " . $e->getMessage());
+        return [];
+    }
 }
+
+// Thêm chính sách bảo hành mới
+public function addWarranty($data) {
+    try {
+        $query = "INSERT INTO chinhsachbaohanh (ten_chinh_sách, noi_dung_chinh_sach) 
+                VALUES (:ten_chinh_sach, :noi_dung_chinh_sach)";
+        
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':ten_chinh_sach', $data['ten_chinh_sách']);
+        $stmt->bindParam(':noi_dung_chinh_sach', $data['noi_dung_chinh_sach']);
+        
+        return $stmt->execute();
+    } catch(PDOException $e) {
+        error_log("Error adding warranty: " . $e->getMessage());
+        return false;
+    }
+}
+
+// Cập nhật thông tin chính sách bảo hành
+public function updateWarranty($data) {
+    try {
+        $query = "UPDATE chinhsachbaohanh 
+                SET ten_chinh_sách = :ten_chinh_sach, noi_dung_chinh_sach = :noi_dung_chinh_sach 
+                WHERE id_chinh_sach = :id_chinh_sach";
+        
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':ten_chinh_sach', $data['ten_chinh_sách']);
+        $stmt->bindParam(':noi_dung_chinh_sach', $data['noi_dung_chinh_sach']);
+        $stmt->bindParam(':id_chinh_sach', $data['id_chinh_sach'], PDO::PARAM_INT);
+        
+        return $stmt->execute();
+    } catch(PDOException $e) {
+        error_log("Error updating warranty: " . $e->getMessage());
+        return false;
+    }
+}
+public function isWarrantyNameExists($ten_chinh_sach) {
+    try {
+        $query = "SELECT COUNT(*) as count FROM chinhsachbaohanh WHERE ten_chinh_sách = :ten_chinh_sach";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':ten_chinh_sach', $ten_chinh_sach, PDO::PARAM_STR);
+        $stmt->execute();
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        return ($result['count'] > 0);
+    } catch(PDOException $e) {
+        error_log("Error in isWarrantyNameExists: " . $e->getMessage());
+        return false;
+    }
+}
+/**
+     * Kiểm tra tên chính sách bảo hành đã tồn tại chưa (trừ chính nó)
+     */
+    public function isWarrantyNameExistsExcept($ten_chinh_sach, $id_chinh_sach) {
+        try {
+            $query = "SELECT COUNT(*) as count FROM chinhsachbaohanh WHERE ten_chinh_sách = :ten_chinh_sach AND id_chinh_sach != :id_chinh_sach";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':ten_chinh_sach', $ten_chinh_sach, PDO::PARAM_STR);
+            $stmt->bindParam(':id_chinh_sach', $id_chinh_sach, PDO::PARAM_INT);
+            $stmt->execute();
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            return ($result['count'] > 0);
+        } catch(PDOException $e) {
+            error_log("Error in isWarrantyNameExistsExcept: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Kiểm tra chính sách bảo hành có đang được sử dụng không
+     */
+    public function isWarrantyInUse($id_chinh_sach) {
+        try {
+            $query = "SELECT COUNT(*) as count FROM sanpham WHERE chinhsachbaohanh = :id_chinh_sach";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':id_chinh_sach', $id_chinh_sach, PDO::PARAM_INT);
+            $stmt->execute();
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            return ($result['count'] > 0);
+        } catch(PDOException $e) {
+            error_log("Error in isWarrantyInUse: " . $e->getMessage());
+            return false;
+        }
+    }
+
+// Xóa chính sách bảo hành
+public function deleteWarranty($id) {
+    try {
+        $query = "DELETE FROM chinhsachbaohanh WHERE id_chinh_sach = :id_chinh_sach";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':id_chinh_sach', $id, PDO::PARAM_INT);
+        return $stmt->execute();
+    } catch(PDOException $e) {
+        error_log("Error deleting warranty: " . $e->getMessage());
+        return false;
+    }
+}
+
+ 
+    /**
+     * Kiểm tra tên khuyến mãi đã tồn tại chưa
+     */
+    public function isPromotionNameExists($tenkhuyenmai) {
+        try {
+            $query = "SELECT COUNT(*) as count FROM khuyenmai WHERE tenkhuyenmai = :tenkhuyenmai";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':tenkhuyenmai', $tenkhuyenmai, PDO::PARAM_STR);
+            $stmt->execute();
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            return ($result['count'] > 0);
+        } catch(PDOException $e) {
+            error_log("Error in isPromotionNameExists: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Kiểm tra tên khuyến mãi đã tồn tại chưa (trừ chính nó)
+     */
+    public function isPromotionNameExistsExcept($tenkhuyenmai, $idkhuyenmai) {
+        try {
+            $query = "SELECT COUNT(*) as count FROM khuyenmai WHERE tenkhuyenmai = :tenkhuyenmai AND idkhuyenmai != :idkhuyenmai";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':tenkhuyenmai', $tenkhuyenmai, PDO::PARAM_STR);
+            $stmt->bindParam(':idkhuyenmai', $idkhuyenmai, PDO::PARAM_INT);
+            $stmt->execute();
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            return ($result['count'] > 0);
+        } catch(PDOException $e) {
+            error_log("Error in isPromotionNameExistsExcept: " . $e->getMessage());
+            return false;
+        }
+    }
+}
+
+
 ?>

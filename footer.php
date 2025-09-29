@@ -5,9 +5,9 @@
                 <span class="fs18 lora clnau text-uppercase">Hộ Kinh Doanh Trần Hoài Phong</span>
                 <!-- <p>MSHKD: 8401387172-001 do UBND Quận Hoàn Kiếm cấp ngày 16 tháng 08 năm 2024</p> -->
                 <a href="https://www.google.com/maps/@10.2507593,105.9563118,214m/data=!3m1!1e3!5m1!1e2?authuser=0&entry=ttu&g_ep=EgoyMDI1MDUxMS4wIKXMDSoASAFQAw%3D%3D" class="smooth hvnau" title="Địa chỉ" rel="nofollow">
-                <p><i class="fa fa-map-marker"></i> Địa chỉ: 102 đường Võ Văn Kiệt, P9, thành phố Vĩnh Long, tỉnh Vĩnh Long</p>
+                <p><i class="fa fa-map-marker"></i> Địa chỉ: Số 68, Đường Nguyễn Huệ , Phường 2, TP. Vĩnh Long</p>
                 </a>
-                <p><a href="tel:0889.60.60.60" rel="nofollow" title="0889.60.60.60" class="smooth hvnau">Hotline Tư Vấn: 0889.60.60.60</a></p>
+                <p><a href="tel:0889.60.60.60" rel="nofollow" title="0886.68.68.68" class="smooth hvnau">Hotline Tư Vấn: 0886.68.68.68</a></p>
                 <a href="mailto:watchluxury68@gmail.com" rel="nofollow" title="watchluxury68@gmail.com" class="smooth hvnau">Email: watchshopluxury68@gmail.com</a>
                 <div class="social-links mt-3">
                     <a href="https://www.facebook.com/nguyen.minh.at.160816" class="smooth hvnau" title="Facebook" rel="nofollow">

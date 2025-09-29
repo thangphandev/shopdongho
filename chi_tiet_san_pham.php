@@ -60,7 +60,7 @@ include 'header.php';
                                     </span>
                                     <span class="d-inline-block px-3 bdl">
                                         Số lượng: <?php echo htmlspecialchars($product['soluong']); ?>
-                                    </span>
+                                    </span>                                   
                                 </p>
                             </div>
 
@@ -348,52 +348,52 @@ include 'header.php';
             if (!empty($relatedProducts)):
             ?>
             <section class="h_pro_cate py-5 bgfixed rela lazy" data-src="images/anh-nen-richard-mille.jpg">
-                <h2 class="main-title text-center mb-5 text-uppercase wow fadeInUp delay01">
-                    <a href="danh-muc.php?id=<?php echo htmlspecialchars($product['iddanhmuc']); ?>" 
-                       class="smooth hvf3">Sản phẩm cùng danh mục</a>
-                </h2>
-                <div class="d_box_slider rela wow fadeInDown delay03">
-                    <div class="container">
-                        <div class="slick_spacing arrow_custom text-center tiny-slider" 
-                             data-axis="horizontal" 
-                             data-controls="false" 
-                             data-slide_by="page" 
-                             data-lazyload="true" 
-                             data-items="1" 
-                             data-mouse_drag="true" 
-                             data-autoplay="true" 
-                             data-autoplay_button_output="false" 
-                             data-speed="400" 
-                             data-nav="false" 
-                             data-responsive='{"1":{"items":"2"},"480":{"items":"2"},"768":{"items":"2"},"991":{"items":"4"},"1900":{"items":"4"}}'>
-                            <?php foreach ($relatedProducts as $relatedProduct): ?>
-                                <div class="d_pro_item text-center pro_mw">
-                                    <a href="chi_tiet_san_pham.php?id=<?php echo htmlspecialchars($relatedProduct['idsanpham']); ?>"
-                                        title="<?php echo htmlspecialchars($relatedProduct['tensanpham']); ?>"
-                                        class="smooth c-img marb-24">
-                                        <img class="contain tns-lazy-img"
-                                            loading="lazy"
-                                            data-src="<?php echo htmlspecialchars($relatedProduct['path_anh_goc']); ?>"
-                                            alt="<?php echo htmlspecialchars($relatedProduct['tensanpham']); ?>"
-                                            title="<?php echo htmlspecialchars($relatedProduct['tensanpham']); ?>">
-                                    </a>
-                                    <!-- <p class="clc1 text-uppercase fs15">MSP: <?php echo htmlspecialchars($relatedProduct['idsanpham']); ?></p> -->
-                                    <h3>
-                                        <a href="chi_tiet_san_pham.php?id=<?php echo htmlspecialchars($relatedProduct['idsanpham']); ?>"
-                                            title="<?php echo htmlspecialchars($relatedProduct['tensanpham']); ?>"
-                                            class="smooth hvnau fs15"><?php echo htmlspecialchars($relatedProduct['tensanpham']); ?></a>
-                                    </h3>
-                                    <?php if ($relatedProduct['giaban'] > 0): ?>
-                                        <p class="clnau fs16"><?php echo number_format($relatedProduct['giaban'], 0, ',', '.'); ?> VNĐ</p>
-                                    <?php else: ?>
-                                        <p class="clnau fs16">Liên hệ</p>
-                                    <?php endif; ?>
-                                </div>
-                            <?php endforeach; ?>
+    <h2 class="main-title text-center mb-5 text-uppercase wow fadeInUp delay01">
+        <a href="https://localhost:8088/savewweb/san-pham-co-san" title="ĐỒNG HỒ CÓ SẴN" class="smooth hvf3">Các sản phẩm tương tự</a>
+    </h2>
+    <div class="d_box_slider rela wow fadeInDown delay03">
+        <div class="container">
+            <div class="slick_spacing arrow_custom text-center tiny-slider" data-axis="horizontal" data-controls="false" data-slide_by="page" data-lazyload="true" data-items="1" data-mouse_drag="true" data-autoplay="true" data-autoplay_button_output="false" data-speed="400" data-nav="false" data-responsive='{"1":{"items":"2"},"480":{"items":"2"},"768":{"items":"2"},"991":{"items":"4"},"1900":{"items":"4"}}'>
+                <?php  
+                $relatedProducts = $connect->getRelatedProducts($product['iddanhmuc'], $product['idsanpham'], 8);  
+                if (!empty($relatedProducts)): 
+                    // Lưu lại sản phẩm hiện tại trước khi lặp qua các sản phẩm tương tự
+                    $currentProduct = $product;
+                    foreach ($relatedProducts as $relatedItem): 
+                ?>
+                        <div class="d_pro_item text-center pro_mw">
+                            <a href="chi_tiet_san_pham.php?id=<?php echo htmlspecialchars($relatedItem['idsanpham']); ?>"
+                                title="<?php echo htmlspecialchars($relatedItem['tensanpham']); ?>"
+                                class="smooth c-img marb-24">
+                                <img class="contain tns-lazy-img"
+                                    loading="lazy"
+                                    data-src="<?php echo htmlspecialchars($relatedItem['path_anh_goc'] ?? 'images/no-image.jpg'); ?>"
+                                    alt="<?php echo htmlspecialchars($relatedItem['tensanpham']); ?>"
+                                    title="<?php echo htmlspecialchars($relatedItem['tensanpham']); ?>">
+                                
+                            </a>
+                            <!-- <p class="clc1 text-uppercase fs15">MSP: <?php echo htmlspecialchars($relatedItem['idsanpham']); ?></p> -->
+                            <h3>
+                                <a href="chi_tiet_san_pham.php?id=<?php echo htmlspecialchars($relatedItem['idsanpham']); ?>"
+                                    title="<?php echo htmlspecialchars($relatedItem['tensanpham']); ?>"
+                                    class="smooth hvnau fs15"><?php echo htmlspecialchars($relatedItem['tensanpham']); ?></a>
+                            </h3>
+                            <?php if ($relatedItem['giaban'] > 0): ?>
+                                <p class="clnau fs16"><?php echo number_format($relatedItem['giaban'], 0, ',', '.'); ?> VNĐ</p>
+                            <?php else: ?>
+                                <p class="clnau fs16">Liên hệ</p>
+                            <?php endif; ?>
                         </div>
-                    </div>
-                </div>
-            </section>
+                <?php 
+                    endforeach;
+                    // Khôi phục lại biến $product sau khi lặp
+                    $product = $currentProduct;
+                endif; 
+                ?>
+            </div>
+        </div>
+    </div>
+</section>
             <?php endif; ?>
 
             <section class="h_pro_cate py-5 bgfixed rela lazy" data-src="images/anh-nen-richard-mille.jpg">
@@ -899,28 +899,58 @@ include 'header.php';
         }
     });
 
+    // function updateQuantity(action) {
+    //     const quantityInput = document.getElementById('product-quantity');
+    //     const maxQuantity =; // Get max quantity from product data
+    //     let currentQuantity = parseInt(quantityInput.value) || 1;
+
+    //     if (action === 'plus' && currentQuantity < maxQuantity) {
+    //         currentQuantity++;
+    //     } else if (action === 'minus' && currentQuantity > 1) {
+    //         currentQuantity--;
+    //     }
+
+    //     quantityInput.value = currentQuantity;
+
+    //     // Optional: Show alert if trying to exceed max quantity
+    //     if (action === 'plus' && currentQuantity > maxQuantity) {
+    //         Swal.fire({
+    //             icon: "warning",
+    //             title: "Thông báo",
+    //             text: "Số lượng đã đạt tối đa trong kho!"
+    //         });
+    //     }
+    // }
+
     function updateQuantity(action) {
-        const quantityInput = document.getElementById('product-quantity');
-        const maxQuantity = <?php echo htmlspecialchars($product['soluong']); ?>; // Get max quantity from product data
-        let currentQuantity = parseInt(quantityInput.value) || 1;
+    const quantityInput = document.getElementById('product-quantity');
+    // Lưu trữ số lượng tối đa trong một biến JavaScript để tránh bị ảnh hưởng bởi các thay đổi của biến PHP
+    const maxQuantity = <?php echo (int)$currentProduct['soluong']; ?>;
+    let currentQuantity = parseInt(quantityInput.value) || 1;
 
-        if (action === 'plus' && currentQuantity < maxQuantity) {
-            currentQuantity++;
-        } else if (action === 'minus' && currentQuantity > 1) {
-            currentQuantity--;
-        }
-
-        quantityInput.value = currentQuantity;
-
-        // Optional: Show alert if trying to exceed max quantity
-        if (action === 'plus' && currentQuantity >= maxQuantity) {
+    if (action === 'plus') {
+        // Kiểm tra nếu số lượng hiện tại đã đạt tối đa
+        if (currentQuantity >= maxQuantity) {
+            // Hiển thị thông báo khi đạt tối đa
             Swal.fire({
                 icon: "warning",
                 title: "Thông báo",
                 text: "Số lượng đã đạt tối đa trong kho!"
             });
+            // Đảm bảo số lượng không vượt quá tối đa
+            quantityInput.value = maxQuantity;
+        } else {
+            // Tăng số lượng nếu chưa đạt tối đa
+            currentQuantity++;
+            quantityInput.value = currentQuantity;
         }
+    } else if (action === 'minus' && currentQuantity > 1) {
+        // Giảm số lượng nếu lớn hơn 1
+        currentQuantity--;
+        quantityInput.value = currentQuantity;
     }
+    
+}
 
     function addToCart(productId) {
     const quantity = parseInt(document.getElementById('product-quantity').value) || 1;

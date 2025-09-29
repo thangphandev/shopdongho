@@ -111,11 +111,7 @@ try {
         throw new Exception('No valid products found');
     }
 
-    // Validate total amount (including shipping fee)
-    $calculatedTotal = array_sum(array_column($products, 'subtotal')) + 30000;
-    if (abs($calculatedTotal - $data['total_amount']) > 1) {
-        throw new Exception('Total amount mismatch');
-    }
+    // Calculate total amount
 
     // Create order and process
     $result = $connect->createOrder($_SESSION['user_id'], $orderData, $products, $data['payment_method']);

@@ -89,7 +89,7 @@ function sendOrderConfirmation($orderData, $products, $userEmail) {
                 <table style='width: 100%; border-collapse: collapse;'>
                     <tr>
                         <td style='padding: 8px 0; color: #555;'>Phí vận chuyển:</td>
-                        <td style='padding: 8px 0; color: #333; text-align: right;'>30.000đ</td>
+                        <td style='padding: 8px 0; color: #333; text-align: right;'>" . number_format($orderData['ship'], 0, ',', '.') . "đ</td>
                     </tr>
                     <tr>
                         <td style='padding: 8px 0; color: #555; font-weight: bold;'>Tổng tiền:</td>

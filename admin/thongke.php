@@ -145,14 +145,12 @@ $currentMonthData = $connect->getRevenueAndProfit($selectedMonth, $selectedYear)
 
         <!-- Report content -->
         <div class="card mb-4">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">Báo cáo phân tích</h5>
-                <?php if ($selectedMonth == date('n') && $selectedYear == date('Y')): ?>
-                    <button id="generateReport" class="btn btn-primary">
-                        <i class="fas fa-robot me-2"></i>Tạo báo cáo AI
-                    </button>
-                <?php endif; ?>
-            </div>
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">Báo cáo phân tích</h5>
+            <button id="generateReport" class="btn btn-primary">
+                <i class="fas fa-robot me-2"></i>Tạo báo cáo AI
+            </button>
+        </div>
             <div class="card-body">
                 <div id="reportLoading" class="text-center d-none">
                     <div class="spinner-border text-primary" role="status">
@@ -257,15 +255,21 @@ $currentMonthData = $connect->getRevenueAndProfit($selectedMonth, $selectedYear)
         if (generateBtn) {
             generateBtn.addEventListener('click', function() {
                 const reportLoading = document.getElementById('reportLoading');
-                
+                const selectedMonth = <?php echo $selectedMonth; ?>;
+                const selectedYear = <?php echo $selectedYear; ?>;
+
                 reportLoading.classList.remove('d-none');
                 generateBtn.disabled = true;
-                
+
                 fetch('http://localhost:5001/api/report', {
-                    method: 'GET',
+                    method: 'POST', // Thay đổi thành POST
                     headers: {
                         'Content-Type': 'application/json'
-                    }
+                    },
+                    body: JSON.stringify({
+                        month: selectedMonth,
+                        year: selectedYear
+                    })
                 })
                 .then(response => response.json())
                 .then(data => {
@@ -273,8 +277,8 @@ $currentMonthData = $connect->getRevenueAndProfit($selectedMonth, $selectedYear)
                         alert('Báo cáo đã được tạo thành công!');
                         // Reload page with selected month and year
                         const url = new URL(window.location.href);
-                        url.searchParams.set('month', <?php echo $selectedMonth; ?>);
-                        url.searchParams.set('year', <?php echo $selectedYear; ?>);
+                        url.searchParams.set('month', selectedMonth);
+                        url.searchParams.set('year', selectedYear);
                         window.location.href = url.toString();
                     } else {
                         alert('Lỗi khi tạo báo cáo: ' + data.message);

@@ -210,7 +210,7 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
 
 // Calculate shipping cost based on distance
 function calculateShippingCost(distance) {
-    const ratePerKm = 1000; // 10,000 VND/km
+    const ratePerKm = 100; // 100 VND/km
     const minShippingFee = 10000; // Minimum fee
     const shippingCost = Math.max(minShippingFee, Math.round(distance * ratePerKm / 1000) * 1000);
     return shippingCost;
@@ -543,7 +543,7 @@ document.getElementById('paypal-button').addEventListener('click', function() {
                         fullname: formData.get('fullname'),
                         phone: formData.get('phone'),
                         address: fullAddress,
-                        ship: shippingFee;
+                        ship: shippingFee,
                         payment_method: 'paypal',
                         payment_details: JSON.stringify(details),
                         total_amount: <?= $total ?> + shippingFee,

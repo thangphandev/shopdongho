@@ -40,6 +40,8 @@
             <li class="nav-item">
                 <a class="nav-link text-white" href="?page=khuyenmai"><i class="fas fa-percent"></i> <span>Quản lý khuyến mãi</span></a>
             </li>
+            <li class="nav-item"><a class="nav-link text-white <?php echo $page == 'baohanh' ? 'active' : ''; ?>" href="admin.php?page=baohanh"><i class="fas fa-shield-alt"></i><span>Quản lý bảo hành</span></a>
+             </li>
             <li class="nav-item">
                 <a class="nav-link text-white" href="?page=thongke"><i class="fas fa-chart-bar"></i> <span>Thống kê báo cáo</span></a>
             </li>
